@@ -113,30 +113,7 @@ export default function HelpCenterPage() {
       description="Gửi báo lỗi AI hoặc liên hệ khi moderator gặp vấn đề trong quá trình kiểm duyệt."
       searchPlaceholder="Tìm trong Help Center..."
     >
-      <section className="help-center-grid">
-        <div className="help-card help-card-info">
-          <h2>Thông tin hỗ trợ</h2>
-          <p>
-            Nếu AI trả lời sai, thiếu căn cứ, phản hồi chậm hoặc phát sinh lỗi trong quá trình
-            kiểm duyệt, hãy gửi báo cáo tại đây. Nội dung sẽ được chuyển thẳng cho admin xử lý.
-          </p>
-
-          <div className="help-info-list">
-            <div className="help-info-item">
-              <span className="help-info-label">Email hỗ trợ</span>
-              <strong>support@ilas.com</strong>
-            </div>
-            <div className="help-info-item">
-              <span className="help-info-label">Kênh nội bộ</span>
-              <strong>Admin feedback queue</strong>
-            </div>
-            <div className="help-info-item">
-              <span className="help-info-label">Mục đích</span>
-              <strong>Escalate lỗi AI cho admin</strong>
-            </div>
-          </div>
-        </div>
-
+      <section className="help-center-form-section">
         <form className="help-card help-card-form" onSubmit={handleSubmit}>
           <h2>Báo lỗi AI cho Admin</h2>
           <p className="help-form-note">

@@ -51,7 +51,8 @@ public class FormTemplate {
         DRAFT,
         PENDING,
         APPROVED,
-        REJECTED
+        REJECTED,
+        ARCHIVED
     }
 }
 

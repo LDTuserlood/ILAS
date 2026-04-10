@@ -6,7 +6,8 @@ import {
   createForm,
   updateForm,
   deleteForm,
-  submitForm,
+  publishForm,
+  hideForm,
 } from "../../api/form";
 import FormModal from "../../components/moderator/FormModal";
 
@@ -77,17 +78,31 @@ export default function FormPage() {
       loadForms();
     } catch (err) {
       if (err.response?.status === 400 || err.response?.status === 403) {
-        alert("⚠️ Không thể xóa biểu mẫu đang chờ duyệt hoặc đã duyệt.");
+        alert("⚠️ Không thể xóa biểu mẫu đang hiển thị. Hãy ẩn trước.");
       } else {
         alert("❌ Lỗi khi xóa biểu mẫu. Vui lòng thử lại sau.");
       }
     }
   };
 
-  const handleSubmit = async (id) => {
-    await submitForm(id);
-    alert("📤 Biểu mẫu đã được gửi duyệt!");
-    loadForms();
+  const handlePublish = async (id) => {
+    try {
+      await publishForm(id);
+      alert("📢 Biểu mẫu đã được đăng!");
+      loadForms();
+    } catch (err) {
+      alert(err?.response?.data?.message || "❌ Không thể đăng biểu mẫu.");
+    }
+  };
+
+  const handleHide = async (id) => {
+    try {
+      await hideForm(id);
+      alert("🙈 Biểu mẫu đã được ẩn khỏi user.");
+      loadForms();
+    } catch (err) {
+      alert(err?.response?.data?.message || "❌ Không thể ẩn biểu mẫu.");
+    }
   };
 
   // Lọc danh sách biểu mẫu theo trạng thái
@@ -105,147 +120,137 @@ export default function FormPage() {
     <ModeratorWorkspace
       active="forms"
       title="Template Management"
-      description="Quản lý kho biểu mẫu do moderator phụ trách, theo dõi trạng thái và gửi duyệt tập trung."
+      description="Quản lý kho biểu mẫu do moderator phụ trách, đăng trực tiếp và ẩn khi cần."
     >
       <section className="moderator-workspace-panel">
         <div className="form-page">
 
-        {/* Thanh tìm kiếm + nút thêm */}
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="🔍 Tìm kiếm biểu mẫu..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          {/* Thanh tìm kiếm + nút thêm */}
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder="🔍 Tìm kiếm biểu mẫu..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
 
-          {/* Dropdown lọc trạng thái */}
-          <select
-            className="filter-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">Tất cả</option>
-            <option value="draft">📝 Nháp</option>
-            <option value="pending">⏳ Chờ duyệt</option>
-            <option value="approved">✅ Đã duyệt</option>
-            <option value="rejected">❌ Bị từ chối</option>
-          </select>
+            {/* Dropdown lọc trạng thái */}
+            <select
+              className="filter-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="ALL">Tất cả</option>
+              <option value="draft">📝 Nháp</option>
+              <option value="approved">📢 Đang đăng</option>
+              <option value="archived">🙈 Đã ẩn</option>
+              <option value="pending">⏳ Chờ duyệt</option>
+              <option value="rejected">❌ Bị từ chối</option>
+            </select>
 
-          <button className="btn-create" onClick={handleCreate}>
-            ➕ Thêm biểu mẫu
-          </button>
-        </div>
+            <button className="btn-create" onClick={handleCreate}>
+              ➕ Thêm biểu mẫu
+            </button>
+          </div>
 
-        <div className="form-list">
-          {filteredForms.length === 0 ? (
-            <p className="empty-text">📭 Không có biểu mẫu phù hợp.</p>
-          ) : (
-            filteredForms.map((form) => (
-              <div key={form.templateId} className="form-card shadow">
-                <div className="form-header">
-                  <div>
-                    <h3>{form.title}</h3>
-                    <p className="meta">
-                      📁 {form.category} | 🕓{" "}
-                      {new Date(form.createdAt).toLocaleString("vi-VN")}
-                    </p>
+          <div className="form-list">
+            {filteredForms.length === 0 ? (
+              <p className="empty-text">📭 Không có biểu mẫu phù hợp.</p>
+            ) : (
+              filteredForms.map((form) => {
+                const status = (form.status || "draft").toLowerCase();
+                const isPublished = status === "approved";
+
+                return (
+                  <div key={form.templateId} className="form-card shadow">
+                    <div className="form-header">
+                      <div>
+                        <h3>{form.title}</h3>
+                        <p className="meta">
+                          📁 {form.category} | 🕓 {new Date(form.createdAt).toLocaleString("vi-VN")}
+                        </p>
+                      </div>
+                      <span className={`status-badge ${status}`}>{form.status}</span>
+                    </div>
+
+                    <p className="description">{form.description || "Không có mô tả."}</p>
+
+                    <div className="form-footer">
+                      <div className="moderator-info">
+                        👤 {form.moderatorName} ({form.moderatorEmail})
+                      </div>
+
+                      <div className="form-actions">
+                        <button
+                          className="btn edit"
+                          onClick={() => handleEdit(form)}
+                          disabled={isPublished}
+                          title={
+                            isPublished
+                              ? "Không thể sửa biểu mẫu đang đăng. Hãy ẩn trước."
+                              : "Chỉnh sửa biểu mẫu"
+                          }
+                        >
+                          ✏️ Sửa
+                        </button>
+
+                        {isPublished ? (
+                          <button
+                            className="btn danger"
+                            onClick={() => handleHide(form.templateId)}
+                            title="Ẩn biểu mẫu khỏi user"
+                          >
+                            🙈 Ẩn
+                          </button>
+                        ) : (
+                          <button
+                            className="btn submit"
+                            onClick={() => handlePublish(form.templateId)}
+                            title="Đăng biểu mẫu"
+                          >
+                            📢 Đăng
+                          </button>
+                        )}
+
+                        <button
+                          className="btn delete"
+                          onClick={() => handleDelete(form.templateId)}
+                          disabled={isPublished}
+                          title={
+                            isPublished
+                              ? "Không thể xóa biểu mẫu đang đăng. Hãy ẩn trước."
+                              : "Xóa biểu mẫu"
+                          }
+                        >
+                          🗑️ Xóa
+                        </button>
+                      </div>
+                    </div>
+
+                    {form.fileUrl && (
+                      <a
+                        href={form.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="file-link"
+                      >
+                        📄 Xem file đính kèm
+                      </a>
+                    )}
                   </div>
-                  <span
-                    className={`status-badge ${(
-                      form.status || "draft"
-                    ).toLowerCase()}`}
-                  >
-                    {form.status}
-                  </span>
-                </div>
+                );
+              })
+            )}
+          </div>
 
-                <p className="description">
-                  {form.description || "Không có mô tả."}
-                </p>
-
-                <div className="form-footer">
-                  <div className="moderator-info">
-                    👤 {form.moderatorName} ({form.moderatorEmail})
-                  </div>
-
-                  <div className="form-actions">
-                    <button
-                      className="btn edit"
-                      onClick={() => handleEdit(form)}
-                      disabled={["pending", "approved"].includes(
-                        (form.status || "").toLowerCase()
-                      )}
-                      title={
-                        ["pending", "approved"].includes(
-                          (form.status || "").toLowerCase()
-                        )
-                          ? "Không thể sửa khi biểu mẫu đã gửi duyệt hoặc phê duyệt"
-                          : "Chỉnh sửa biểu mẫu"
-                      }
-                    >
-                      ✏️ Sửa
-                    </button>
-
-                    <button
-                      className="btn submit"
-                      onClick={() => handleSubmit(form.templateId)}
-                      disabled={["pending", "approved"].includes(
-                        (form.status || "").toLowerCase()
-                      )}
-                      title={
-                        ["pending", "approved"].includes(
-                          (form.status || "").toLowerCase()
-                        )
-                          ? "Đã gửi duyệt, không thể gửi lại"
-                          : "Gửi biểu mẫu để duyệt"
-                      }
-                    >
-                      🚀 Gửi duyệt
-                    </button>
-
-                    <button
-                      className="btn delete"
-                      onClick={() => handleDelete(form.templateId)}
-                      disabled={["pending", "approved"].includes(
-                        (form.status || "").toLowerCase()
-                      )}
-                      title={
-                        ["pending", "approved"].includes(
-                          (form.status || "").toLowerCase()
-                        )
-                          ? "Không thể xóa biểu mẫu đang chờ duyệt hoặc đã duyệt"
-                          : "Xóa biểu mẫu"
-                      }
-                    >
-                      🗑️ Xóa
-                    </button>
-                  </div>
-                </div>
-
-                {form.fileUrl && (
-                  <a
-                    href={form.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="file-link"
-                  >
-                    📄 Xem file đính kèm
-                  </a>
-                )}
-              </div>
-            ))
+          {showModal && (
+            <FormModal
+              moderatorId={moderatorId}
+              formData={editForm}
+              onSave={handleSave}
+              onClose={() => setShowModal(false)}
+            />
           )}
-        </div>
-
-        {showModal && (
-          <FormModal
-            moderatorId={moderatorId}
-            formData={editForm}
-            onSave={handleSave}
-            onClose={() => setShowModal(false)}
-          />
-        )}
         </div>
       </section>
     </ModeratorWorkspace>

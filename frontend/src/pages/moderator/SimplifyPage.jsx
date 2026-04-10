@@ -94,7 +94,10 @@ export default function SimplifyPage() {
       setMessage("✨ AI đã tạo bản rút gọn — bạn có thể chỉnh sửa!");
     } catch (err) {
       console.error(err);
-      setMessage("⚠️ AI không thể sinh bản rút gọn.");
+      const backendMessage =
+        err?.response?.data?.message ||
+        (typeof err?.response?.data === "string" ? err.response.data : "");
+      setMessage(`⚠️ AI không thể sinh bản rút gọn.${backendMessage ? ` ${backendMessage}` : ""}`);
     }
   }, [API_AI, articleId, articleTitle, originalText]);
 
@@ -271,6 +274,16 @@ export default function SimplifyPage() {
     [mySimplified]
   );
 
+  const bulkApproveCount = useMemo(
+    () => mySimplified.filter((item) => item.status !== "APPROVED").length,
+    [mySimplified]
+  );
+
+  const bulkHideCount = useMemo(
+    () => mySimplified.filter((item) => item.status !== "ARCHIVED").length,
+    [mySimplified]
+  );
+
   const queueLabel = useMemo(() => {
     if (currentStatus === "PENDING") {
       return `Đang chờ ${pendingReviewCount || 1} mục thẩm định`;
@@ -340,6 +353,11 @@ export default function SimplifyPage() {
       return;
     }
 
+    if (bulkApproveCount === 0) {
+      setMessage("ℹ️ Không có bản rút gọn nào cần duyệt hàng loạt.");
+      return;
+    }
+
     try {
       const res = await axios.put(
         `${API_SIMPLIFIED}/approve-all/${moderatorId}`,
@@ -349,7 +367,7 @@ export default function SimplifyPage() {
       await refreshMine();
       const updatedCount = Number(res.data?.updated || 0);
       setCurrentStatus((prev) => (prev && prev !== "NEW" ? "APPROVED" : prev));
-      setMessage(`✅ Đã duyệt hàng loạt ${updatedCount} bản rút gọn.`);
+      setMessage(`✅ Đã duyệt hàng loạt ${updatedCount} bản rút gọn AI.`);
     } catch {
       setMessage("❌ Không thể duyệt tất cả bản rút gọn.");
     }
@@ -385,6 +403,11 @@ export default function SimplifyPage() {
   const handleHideAllFromUser = async () => {
     if (!moderatorId) {
       setMessage("⚠️ Không xác định được tài khoản moderator.");
+      return;
+    }
+
+    if (bulkHideCount === 0) {
+      setMessage("ℹ️ Tất cả bản rút gọn đã được ẩn khỏi user.");
       return;
     }
 
@@ -435,17 +458,17 @@ export default function SimplifyPage() {
               type="button"
               className="btn approve"
               onClick={handleApproveAll}
-              disabled={mySimplified.length === 0}
+              disabled={bulkApproveCount === 0}
             >
-              Duyệt tất cả
+              Duyệt tất cả ({bulkApproveCount})
             </button>
             <button
               type="button"
               className="btn danger"
               onClick={handleHideAllFromUser}
-              disabled={mySimplified.length === 0}
+              disabled={bulkHideCount === 0}
             >
-              Ẩn tất cả
+              Ẩn tất cả ({bulkHideCount})
             </button>
           </div>
 

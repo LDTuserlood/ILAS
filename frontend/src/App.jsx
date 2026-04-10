@@ -11,7 +11,7 @@ import AdminLayout from "./layouts/AdminLayout";
 // ===== Public Pages =====
 import LandingPage from "./pages/public/LandingPage";
 import AboutPage from "./pages/public/AboutPage";
-import ProfilePage from "./pages/public/ProfilePage";
+import ProfilePage from "./pages/user/ProfilePage";
 
 // ===== Auth Pages =====
 import LoginPage from "./pages/auth/LoginPage";
@@ -22,7 +22,6 @@ import DashboardPage from "./pages/user/DashboardPage";
 import UserSearch from "./pages/user/UserSearch";
 import UserSearchDetail from "./pages/user/UserSearchDetail";
 import FormPage from "./pages/user/FormPage";
-import HelpContactPage from "./pages/user/HelpContactPage";
 import ChatHistoryPage from "./components/chatbot/ChatHistoryPage";
 
 
@@ -76,7 +75,6 @@ const router = createBrowserRouter([
       // Public
       { path: "search", element: <UserSearch /> },
       { path: "search/detail", element: <UserSearchDetail /> },
-      { path: "help", element: <HelpContactPage /> },
 
       // User
       {
@@ -91,7 +89,6 @@ const router = createBrowserRouter([
           { path: "search", element: <UserSearch /> },
           { path: "search/detail", element: <UserSearchDetail /> },
           { path: "form", element: <FormPage /> },
-          { path: "help", element: <HelpContactPage /> },
         ],
       },
     ],

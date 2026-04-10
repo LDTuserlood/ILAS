@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Service dành cho biên tập viên (Moderator)
- * Xử lý CRUD và gửi duyệt biểu mẫu (FormTemplate)
+ * Xử lý CRUD và xuất bản/ẩn biểu mẫu (FormTemplate)
  */
 @Service("moderatorFormTemplateService")
 public class ModeratorFormTemplateService {
@@ -58,14 +58,14 @@ public class ModeratorFormTemplateService {
         return mapToResponse(saved);
     }
 
-    /**  Cập nhật form (chỉ cho phép khi là draft hoặc rejected) */
+    /**  Cập nhật form (không cho sửa khi đang hiển thị cho user) */
     public FormTemplateResponse updateForm(Integer id, FormTemplateRequest req) {
         FormTemplate form = formRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biểu mẫu"));
 
         FormTemplate.Status status = form.getStatus();
-        if (status == FormTemplate.Status.PENDING || status == FormTemplate.Status.APPROVED) {
-            throw new RuntimeException("Không thể chỉnh sửa biểu mẫu đã gửi duyệt hoặc đã được duyệt.");
+        if (status == FormTemplate.Status.APPROVED) {
+            throw new RuntimeException("Không thể chỉnh sửa biểu mẫu đang hiển thị. Hãy ẩn trước khi sửa.");
         }
 
         form.setTitle(req.getTitle());
@@ -80,22 +80,38 @@ public class ModeratorFormTemplateService {
         return mapToResponse(updated);
     }
 
-    /**  Gửi duyệt form (chỉ cho phép khi là draft hoặc rejected) */
-    public FormTemplateResponse submitForm(Integer id) {
+    /**  Đăng form để user có thể thấy ngay */
+    public FormTemplateResponse publishForm(Integer id) {
         FormTemplate form = formRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biểu mẫu"));
 
-        FormTemplate.Status status = form.getStatus();
-        if (status != FormTemplate.Status.DRAFT && status != FormTemplate.Status.REJECTED) {
-            throw new RuntimeException("Chỉ có thể gửi duyệt biểu mẫu ở trạng thái Nháp hoặc Bị từ chối.");
+        if (form.getStatus() == FormTemplate.Status.APPROVED) {
+            throw new RuntimeException("Biểu mẫu đã được đăng.");
         }
 
-        form.setStatus(FormTemplate.Status.PENDING);
-        FormTemplate submitted = formRepo.save(form);
+        form.setStatus(FormTemplate.Status.APPROVED);
+        FormTemplate published = formRepo.save(form);
         try {
-            auditLogService.log("Gửi duyệt biểu mẫu", "templateId=" + submitted.getTemplateId() + " title=" + submitted.getTitle(), submitted.getModerator());
+            auditLogService.log("Đăng biểu mẫu", "templateId=" + published.getTemplateId() + " title=" + published.getTitle(), published.getModerator());
         } catch (Exception ignored) {}
-        return mapToResponse(submitted);
+        return mapToResponse(published);
+    }
+
+    /**  Ẩn form khỏi user */
+    public FormTemplateResponse hideForm(Integer id) {
+        FormTemplate form = formRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy biểu mẫu"));
+
+        if (form.getStatus() == FormTemplate.Status.ARCHIVED) {
+            throw new RuntimeException("Biểu mẫu đã được ẩn.");
+        }
+
+        form.setStatus(FormTemplate.Status.ARCHIVED);
+        FormTemplate archived = formRepo.save(form);
+        try {
+            auditLogService.log("Ẩn biểu mẫu", "templateId=" + archived.getTemplateId() + " title=" + archived.getTitle(), archived.getModerator());
+        } catch (Exception ignored) {}
+        return mapToResponse(archived);
     }
 
     /**  Tạo bản sao form đã duyệt để chỉnh sửa */
@@ -122,14 +138,14 @@ public class ModeratorFormTemplateService {
         return mapToResponse(saved);
     }
 
-    /**  Xóa form (chỉ khi là draft hoặc rejected) */
+    /**  Xóa form (không cho xóa khi đang hiển thị cho user) */
     public void deleteForm(Integer id) {
         FormTemplate form = formRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy biểu mẫu"));
 
         FormTemplate.Status status = form.getStatus();
-        if (status == FormTemplate.Status.PENDING || status == FormTemplate.Status.APPROVED) {
-            throw new RuntimeException("Không thể xóa biểu mẫu đã gửi duyệt hoặc đã được duyệt.");
+        if (status == FormTemplate.Status.APPROVED) {
+            throw new RuntimeException("Không thể xóa biểu mẫu đang hiển thị. Hãy ẩn trước.");
         }
 
         FormTemplate toDelete = formRepo.findById(id).orElse(null);

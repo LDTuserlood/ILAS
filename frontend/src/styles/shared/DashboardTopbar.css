@@ -1,0 +1,230 @@
+/* Dashboard Topbar - Shared Component */
+
+.dashboard-topbar {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Search Bar */
+.dashboard-topbar-search {
+  flex: 1;
+  max-width: 560px;
+  min-width: 280px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1.5px solid #dde4ed;
+  background: #ffffff;
+  color: #8a95aa;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-topbar-search:focus-within {
+  border-color: #2b67c0;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(43, 103, 192, 0.12);
+}
+
+.dashboard-topbar-search svg {
+  flex-shrink: 0;
+  color: #a4b2c3;
+}
+
+.dashboard-topbar-search input {
+  flex: 1;
+  min-width: 200px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #334455;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.dashboard-topbar-search input::placeholder {
+  color: #b8c3d6;
+  font-weight: 400;
+}
+
+/* Tools Section */
+.dashboard-topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Icon Buttons */
+.dashboard-topbar-icon-btn {
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid #dde4ed;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #546579;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-topbar-icon-btn:hover {
+  border-color: #c5cfe3;
+  background: #f5f8fc;
+  color: #2b67c0;
+  box-shadow: 0 2px 8px rgba(43, 103, 192, 0.1);
+}
+
+.dashboard-topbar-icon-btn:active {
+  transform: scale(0.95);
+}
+
+/* User Chip */
+.dashboard-topbar-user-chip {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 14px;
+  border: 1.5px solid #dde4ed;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ffffff 0%, #fafbfd 100%);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.dashboard-topbar-user-chip:hover {
+  border-color: #c5cfe3;
+  box-shadow: 0 4px 12px rgba(43, 103, 192, 0.1);
+}
+
+.dashboard-topbar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+}
+
+.dashboard-topbar-user-name {
+  color: #233546;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-topbar-user-role {
+  color: #8a95aa;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* Avatar */
+.dashboard-topbar-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2b67c0 0%, #70a0ea 100%);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.94rem;
+  flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(43, 103, 192, 0.2);
+}
+
+.dashboard-topbar-user-chip:hover .dashboard-topbar-avatar {
+  box-shadow: 0 4px 16px rgba(43, 103, 192, 0.3);
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .dashboard-topbar-search {
+    max-width: 400px;
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-topbar {
+    gap: 10px;
+    padding: 10px 0;
+  }
+
+  .dashboard-topbar-search {
+    flex: 1;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .dashboard-topbar-tools {
+    gap: 8px;
+  }
+
+  .dashboard-topbar-icon-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .dashboard-topbar-user-info {
+    display: none;
+  }
+
+  .dashboard-topbar-user-chip {
+    gap: 8px;
+    padding: 4px 4px 4px 8px;
+  }
+
+  .dashboard-topbar-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-topbar {
+    flex-direction: column;
+  }
+
+  .dashboard-topbar-search {
+    order: 2;
+    width: 100%;
+  }
+
+  .dashboard-topbar-tools {
+    order: 1;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

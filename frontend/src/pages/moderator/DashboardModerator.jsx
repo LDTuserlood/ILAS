@@ -9,7 +9,7 @@ import {
   FiMessageCircle,
   FiRefreshCw,
 } from "react-icons/fi";
-import ModeratorWorkspace from "../../components/moderator/ModeratorWorkspace";
+import ModeratorDashboardLayout from "../../components/moderator/ModeratorDashboardLayout";
 import "../../styles/moderator/DashboardModerator.css";
 
 const API_ROOT = "http://localhost:8080/api/moderator";
@@ -228,11 +228,9 @@ export default function DashboardModerator() {
   };
 
   return (
-    <ModeratorWorkspace
-      active="dashboard"
+    <ModeratorDashboardLayout
       title="Dashboard Moderator"
       description="Tổng quan công việc theo dữ liệu thực tế của luật, biểu mẫu và phản hồi."
-      searchPlaceholder="Tìm nhanh trong dashboard..."
       actions={
         <>
           <button type="button" className="moderator-workspace-action-btn" onClick={loadDashboard} disabled={!moderatorId}>
@@ -365,7 +363,6 @@ export default function DashboardModerator() {
           </aside>
         </section>
       </div>
-    </ModeratorWorkspace>
+    </ModeratorDashboardLayout>
   );
 }
-

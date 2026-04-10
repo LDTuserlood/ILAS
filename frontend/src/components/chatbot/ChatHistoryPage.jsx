@@ -253,20 +253,6 @@ export default function ChatHistoryPage() {
       <UserSidebar active="chatbot" />
 
       <main className="chatassist-main">
-        <header className="udash-topbar chatassist-topbar">
-          <div className="chatassist-topbar-title">
-            <span>LegalAssist AI</span>
-            <span className="chatassist-status-pill">ACTIVE SECURE</span>
-          </div>
-          <div className="udash-user-card">
-            <div>
-              <div className="udash-user-name">{displayName}</div>
-              <div className="udash-user-role">Công nhân</div>
-            </div>
-            <div className="udash-avatar">👤</div>
-          </div>
-        </header>
-
         <div className="chatassist-content">
           <section className="chatassist-history-bar">
             <button type="button" className="chatassist-history-chip" onClick={handleNewChat}>

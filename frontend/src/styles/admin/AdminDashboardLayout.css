@@ -1,0 +1,17 @@
+/* Admin Dashboard Layout */
+
+.admin-dashboard-layout-page {
+  min-height: 100vh;
+  background: var(--admin-bg, #f3f5f9);
+  display: block;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.admin-dashboard-layout-main {
+  width: 100%;
+  padding: 14px 18px 28px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}

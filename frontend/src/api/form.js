@@ -321,13 +321,24 @@ export const updateForm = async (id, formData) => {
   }
 };
 
-// 🟢 Gửi duyệt biểu mẫu
-export const submitForm = async (id) => {
+// 🟢 Đăng biểu mẫu (hiển thị cho user)
+export const publishForm = async (id) => {
   try {
-    const response = await api.put(`/moderator/form-templates/${id}/submit`);
+    const response = await api.put(`/moderator/form-templates/${id}/publish`);
     return { data: response.data };
   } catch (error) {
-    console.error("❌ Lỗi submitForm:", error);
+    console.error("❌ Lỗi publishForm:", error);
+    throw error;
+  }
+};
+
+// 🟢 Ẩn biểu mẫu khỏi user
+export const hideForm = async (id) => {
+  try {
+    const response = await api.put(`/moderator/form-templates/${id}/hide`);
+    return { data: response.data };
+  } catch (error) {
+    console.error("❌ Lỗi hideForm:", error);
     throw error;
   }
 };

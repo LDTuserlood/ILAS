@@ -233,15 +233,6 @@ const UserSearch = () => {
       <UserSidebar active={isAuthenticated ? "search" : undefined} />
 
       <main className="usearch-main">
-        <header className="usearch-topbar">
-          <strong>Law Search Results</strong>
-          <div className="usearch-top-icons">
-            <button type="button" aria-label="Notifications">•</button>
-            <button type="button" aria-label="Settings">⚙</button>
-            <button type="button" aria-label="Profile">👤</button>
-          </div>
-        </header>
-
         <section className="usearch-content">
           <h1>Tra cứu Pháp luật</h1>
 

@@ -1,0 +1,53 @@
+/* Moderator Dashboard Layout */
+
+.moderator-dashboard-layout-page {
+  min-height: 100vh;
+  background: var(--admin-bg, #f3f5f9);
+  display: block;
+  width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.moderator-dashboard-layout-page .admin-sidebar {
+  width: 168px;
+  box-sizing: border-box;
+}
+
+.moderator-dashboard-layout-main {
+  min-width: 0;
+  margin-left: 168px;
+  padding: 14px 18px 28px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.moderator-dashboard-layout-header {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.moderator-dashboard-layout-header h1 {
+  margin: 0;
+  color: #263341;
+  font-size: 2.15rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.moderator-dashboard-layout-header p {
+  margin: 8px 0 0;
+  color: #6f7f92;
+  max-width: 72ch;
+  line-height: 1.5;
+}
+
+.moderator-dashboard-layout-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

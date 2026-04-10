@@ -151,8 +151,10 @@ public class SimplifiedArticleService {
         int updated = 0;
 
         for (SimplifiedArticle item : mine) {
-            approveOne(item.getId(), moderatorId);
-            updated++;
+            if (item.getStatus() != SimplifiedArticle.Status.APPROVED) {
+                approveOne(item.getId(), moderatorId);
+                updated++;
+            }
         }
 
         return updated;

@@ -18,6 +18,13 @@ public class AISummarizeController {
 
     @PostMapping("/summarize-law")
     public ResponseEntity<?> summarize(@RequestBody SummarizeRequest req) {
+        if (req == null || req.getLawContent() == null || req.getLawContent().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "LAW_CONTENT_EMPTY",
+                    "message", "Nội dung điều luật trống, không thể rút gọn."
+            ));
+        }
+
         try {
             String summary = groqService.generateSummary(
                     req.getLawContent(),
@@ -29,7 +36,10 @@ public class AISummarizeController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("AI summarize failed");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "AI_SUMMARIZE_FAILED",
+                    "message", e.getMessage() == null ? "AI summarize failed" : e.getMessage()
+            ));
         }
     }
 }

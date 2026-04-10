@@ -154,8 +154,6 @@ const ProfilePage = () => {
     }
   };
 
-  const displayName = profileData.fullName || user?.username || 'Người dùng';
-
   if (loading) {
     return (
       <div className="settings-page">
@@ -173,25 +171,10 @@ const ProfilePage = () => {
 
       {/* ===== MAIN ===== */}
       <main className="settings-main">
-        {/* Topbar */}
-        <header className="settings-topbar">
-          <div className="settings-breadcrumb">
-            <span className="breadcrumb-link" onClick={() => navigate('/user/dashboard')}>Portal</span>
-            <span className="breadcrumb-sep"> / </span>
-            <span>Settings</span>
-          </div>
-          <div className="settings-topbar-right">
-            <button className="settings-icon-btn" aria-label="Notifications">🔔</button>
-            <button className="settings-icon-btn" aria-label="Help">❓</button>
-            <span className="settings-topbar-username">{displayName}</span>
-            <div className="settings-topbar-avatar">👤</div>
-          </div>
-        </header>
-
         <div className="settings-content">
-          <h1 className="settings-title">Account Settings</h1>
+          <h1 className="settings-title">Cài Đặt Tài Khoản</h1>
           <p className="settings-subtitle">
-            Manage your professional profile, adjust notification preferences, and tailor the platform to your preferred language.
+            Quản lý hồ sơ chuyên nghiệp của bạn, điều chỉnh tùy chọn thông báo và tùy chỉnh nền tảng theo ngôn ngữ ưa thích của bạn.
           </p>
 
           {error && <div className="settings-msg error">{error}</div>}
@@ -206,14 +189,14 @@ const ProfilePage = () => {
                 <div className="settings-card-header">
                   <div className="settings-card-icon-wrap">👤</div>
                   <div>
-                    <h3>Personal Information</h3>
-                    <p>Update your public profile and contact details.</p>
+                    <h3>Thông Tin Cá Nhân</h3>
+                    <p>Cập nhật hồ sơ công khai và thông tin liên hệ của bạn.</p>
                   </div>
                 </div>
 
                 <div className="settings-form-grid">
                   <div className="settings-field">
-                    <label>Full Name</label>
+                    <label>Họ và Tên</label>
                     <input
                       type="text"
                       value={formDraft.fullName}
@@ -222,7 +205,7 @@ const ProfilePage = () => {
                     />
                   </div>
                   <div className="settings-field">
-                    <label>Phone</label>
+                    <label>Số Điện Thoại</label>
                     <input
                       type="tel"
                       value={formDraft.phone}
@@ -233,16 +216,16 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="settings-field settings-field-full">
-                  <label>Email Address</label>
+                  <label>Địa Chỉ Email</label>
                   <input type="email" value={profileData.email} readOnly />
-                  <span className="settings-field-hint">● Changing your email will require re-verification.</span>
+                  <span className="settings-field-hint">● Thay đổi email của bạn sẽ yêu cầu xác minh lại.</span>
                 </div>
 
                 <div className="settings-form-actions">
                   <button className="settings-save-btn" onClick={handleSaveChanges} disabled={saving}>
-                    {saving ? 'Đang lưu...' : 'Save Changes'}
+                    {saving ? 'Đang lưu...' : 'Lưu Thay Đổi'}
                   </button>
-                  <button className="settings-reset-btn" onClick={handleReset}>Reset</button>
+                  <button className="settings-reset-btn" onClick={handleReset}>Đặt Lại</button>
                 </div>
               </div>
 
@@ -295,13 +278,13 @@ const ProfilePage = () => {
               <div className="settings-card">
                 <div className="settings-card-header settings-card-header-sm">
                   <div className="settings-card-icon-wrap alerts">🔔</div>
-                  <h3>Alerts</h3>
+                  <h3>Cảnh Báo</h3>
                 </div>
                 <div className="settings-toggles">
                   <div className="settings-toggle-row">
                     <div>
-                      <div className="toggle-label">Email Notifications</div>
-                      <div className="toggle-sub">Daily digest of activities</div>
+                      <div className="toggle-label">Thông Báo Email</div>
+                      <div className="toggle-sub">Tóm tắt hoạt động hàng ngày</div>
                     </div>
                     <button
                       className={`settings-toggle ${alerts.emailNotifications ? 'on' : 'off'}`}
@@ -311,8 +294,8 @@ const ProfilePage = () => {
                   </div>
                   <div className="settings-toggle-row">
                     <div>
-                      <div className="toggle-label">Case Updates</div>
-                      <div className="toggle-sub">Real-time legal changes</div>
+                      <div className="toggle-label">Cập Nhật Vụ Án</div>
+                      <div className="toggle-sub">Thay đổi pháp lý theo thời gian thực</div>
                     </div>
                     <button
                       className={`settings-toggle ${alerts.caseUpdates ? 'on' : 'off'}`}
@@ -322,8 +305,8 @@ const ProfilePage = () => {
                   </div>
                   <div className="settings-toggle-row">
                     <div>
-                      <div className="toggle-label">System Status</div>
-                      <div className="toggle-sub">Maintenance alerts</div>
+                      <div className="toggle-label">Trạng Thái Hệ Thống</div>
+                      <div className="toggle-sub">Cảnh báo bảo trì</div>
                     </div>
                     <button
                       className={`settings-toggle ${alerts.systemStatus ? 'on' : 'off'}`}
@@ -338,13 +321,12 @@ const ProfilePage = () => {
               <div className="settings-card">
                 <div className="settings-card-header settings-card-header-sm">
                   <div className="settings-card-icon-wrap">🌐</div>
-                  <h3>Language</h3>
+                  <h3>Ngôn Ngữ</h3>
                 </div>
                 <div className="settings-lang-list">
                   {[
-                    { code: 'en-US', label: 'English (US)' },
+                    { code: 'en-US', label: 'English (Mỹ)' },
                     { code: 'vi', label: 'Tiếng Việt' },
-                    { code: 'fr', label: 'Français' },
                   ].map(lang => (
                     <button
                       key={lang.code}
@@ -367,8 +349,8 @@ const ProfilePage = () => {
             <div className="settings-security-left">
               <div className="settings-security-icon">⚠️</div>
               <div>
-                <h3>Security &amp; Privacy</h3>
-                <p>Deactivating your account will permanently remove all access to historical case files.</p>
+                <h3>Bảo Mật &amp; Quyền Riêng Tư</h3>
+                <p>Vô hiệu hóa tài khoản của bạn sẽ vĩnh viễn xóa tất cả quyền truy cập vào các tệp vụ án lịch sử.</p>
               </div>
             </div>
             <button className="settings-deactivate-btn" onClick={handleLogout} disabled={loading}>

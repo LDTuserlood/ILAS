@@ -26,7 +26,6 @@ export default function Header() {
           { to: "/search", label: "Tìm kiếm" },
           ...(isAuthenticated ? [{ to: "/user/form", label: "Biểu mẫu" }] : []),
           { to: "/about", label: "Giới thiệu" },
-          { to: "/help", label: "Liên hệ" },
         ];
 
   // Dropdown

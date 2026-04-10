@@ -204,17 +204,6 @@ const FormPage = () => {
       <UserSidebar active="form" />
 
       <main className="formhub-main">
-        <header className="udash-topbar formhub-topbar">
-          <div className="formhub-topbar-title">Worker Assistance Portal</div>
-          <div className="udash-user-card">
-            <div>
-              <div className="udash-user-name">{displayName}</div>
-              <div className="udash-user-role">Công nhân</div>
-            </div>
-            <div className="udash-avatar">👤</div>
-          </div>
-        </header>
-
         <section className="formhub-hero">
           <h1>Thư viện Biểu mẫu &amp; Văn bản mẫu</h1>
           <p>

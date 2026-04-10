@@ -294,15 +294,6 @@ const UserSearchDetail = () => {
       <UserSidebar active="search" />
 
       <main className="userdetail-main">
-        <header className="userdetail-topbar">
-          <strong>ILAS Worker</strong>
-          <div className="userdetail-top-actions">
-            <button type="button" aria-label="Notifications">•</button>
-            <button type="button" aria-label="Help">?</button>
-            <button type="button" aria-label="Profile">👤</button>
-          </div>
-        </header>
-
         <section className="userdetail-workspace">
           <div className="userdetail-center">
             <h1>Hello, how can I help you with legal queries today?</h1>

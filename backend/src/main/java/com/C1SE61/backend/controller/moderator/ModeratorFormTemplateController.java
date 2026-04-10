@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * Controller dành cho biên tập viên (Moderator)
- * - CRUD và gửi duyệt biểu mẫu (FormTemplate)
+ * - CRUD và xuất bản/ẩn biểu mẫu (FormTemplate)
  */
 @RestController
 @RequestMapping("/api/moderator/form-templates")
@@ -48,10 +48,22 @@ public class ModeratorFormTemplateController {
         return ResponseEntity.ok(formService.updateForm(id, req));
     }
 
-    /** Gửi biểu mẫu để chờ duyệt */
+    /** Đăng biểu mẫu để hiển thị cho user */
+    @PutMapping("/{id}/publish")
+    public ResponseEntity<FormTemplateResponse> publishForm(@PathVariable Integer id) {
+        return ResponseEntity.ok(formService.publishForm(id));
+    }
+
+    /** Ẩn biểu mẫu khỏi user */
+    @PutMapping("/{id}/hide")
+    public ResponseEntity<FormTemplateResponse> hideForm(@PathVariable Integer id) {
+        return ResponseEntity.ok(formService.hideForm(id));
+    }
+
+    /** Backward compatibility: submit = publish */
     @PutMapping("/{id}/submit")
     public ResponseEntity<FormTemplateResponse> submitForm(@PathVariable Integer id) {
-        return ResponseEntity.ok(formService.submitForm(id));
+        return ResponseEntity.ok(formService.publishForm(id));
     }
 
     /** Tạo bản sao (clone) từ biểu mẫu đã duyệt để chỉnh sửa */

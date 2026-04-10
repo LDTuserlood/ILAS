@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useMemo } from "react";
 import axios from "axios";
 import { Bell, ChartNoAxesColumn, CircleAlert, Download, Search, Shield, UserCheck, Users } from "lucide-react";
 import { trackAPI } from "../../api/track";
+import AdminDashboardLayout from "../../components/admin/AdminDashboardLayout";
 import "../../styles/admin/DashboardAdmin.css";
 
 const DashboardAdmin = () => {
@@ -255,21 +256,7 @@ const DashboardAdmin = () => {
   }
 
   return (
-    <div className="admdash-page">
-      <div className="admdash-topbar">
-        <div className="admdash-search-wrap">
-          <Search size={14} />
-          <input placeholder="Tìm kiếm hệ thống..." disabled />
-        </div>
-        <div className="admdash-userbox">
-          <Bell size={16} />
-          <div>
-            <div className="admdash-user-name">Admin User</div>
-            <div className="admdash-user-role">HỆ THỐNG ILAS</div>
-          </div>
-        </div>
-      </div>
-
+    <AdminDashboardLayout>
       <div className="admdash-heading-row">
         <div>
           <h1>Tổng quan quản trị</h1>
@@ -371,7 +358,7 @@ const DashboardAdmin = () => {
           ))}
         </div>
       </section>
-    </div>
+    </AdminDashboardLayout>
   );
 };
 

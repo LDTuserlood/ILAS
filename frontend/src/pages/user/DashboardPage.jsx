@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import UserSidebar from "../../components/user/UserSidebar";
+import DashboardTopbar from "../../components/shared/DashboardTopbar";
 import "../../styles/user/DashboardPage.css";
 
 const DashboardPage = () => {
@@ -13,13 +14,12 @@ const DashboardPage = () => {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (!query.trim()) {
+  const handleSearch = (searchQuery) => {
+    if (!searchQuery.trim()) {
       navigate("/search");
       return;
     }
-    navigate(`/search?keyword=${encodeURIComponent(query.trim())}`);
+    navigate(`/search?keyword=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const displayName = user?.fullName || user?.username || "Người dùng";
@@ -59,24 +59,11 @@ const DashboardPage = () => {
       <UserSidebar active="dashboard" />
 
       <main className="udash-main">
-        <header className="udash-topbar">
-          <form className="udash-search" onSubmit={handleSearch}>
-            <input
-              type="text"
-              placeholder="Tìm kiếm tài liệu, luật lao động..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </form>
-
-          <div className="udash-user-card">
-            <div>
-              <div className="udash-user-name">{displayName}</div>
-              <div className="udash-user-role">Công nhân</div>
-            </div>
-            <div className="udash-avatar">👤</div>
-          </div>
-        </header>
+        <DashboardTopbar
+          searchPlaceholder="Tìm kiếm tài liệu, luật lao động..."
+          onSearchSubmit={handleSearch}
+          userRole="Công nhân"
+        />
 
         <section className="udash-hero">
           <h1>Xin chào, {displayName}!</h1>
@@ -166,7 +153,7 @@ const DashboardPage = () => {
               được sửa đổi thời hạn của hợp đồng lao động đã giao kết. Luôn yêu cầu một bản sao có
               đóng dấu để lưu trữ.
             </p>
-            <button type="button" onClick={() => navigate("/help")}>
+            <button type="button" onClick={() => navigate("/about")}>
               Tìm hiểu thêm
             </button>
           </div>
