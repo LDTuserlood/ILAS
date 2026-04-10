@@ -1,0 +1,242 @@
+/* ===============================
+   SETTINGS - Đồng bộ với Dashboard Admin
+   =============================== */
+
+/* === Container === */
+.settings-container {
+  font-family: "Inter", sans-serif;
+  padding: 30px;
+  min-height: 100vh;
+  background: var(--admin-bg-main, #f5f7fa);
+}
+
+/* === Header === */
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.settings-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--admin-primary-blue, #1a5ca6);
+  margin: 0 0 8px 0;
+}
+
+.settings-subtitle {
+  font-size: 14px;
+  color: var(--admin-text-light, #64748b);
+  margin: 0;
+}
+
+.settings-alert {
+  padding: 8px 16px;
+  background-color: #fef3c7;
+  color: #92400e;
+  border-radius: var(--admin-radius-sm, 8px);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #fde68a;
+}
+
+/* === Layout === */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 24px;
+}
+
+/* === Sidebar === */
+.settings-sidebar {
+  background: var(--admin-card-white, #ffffff);
+  border-radius: var(--admin-radius-md, 12px);
+  box-shadow: var(--admin-shadow-sm, 0 2px 8px rgba(26, 92, 166, 0.06));
+  border: 1px solid var(--admin-border-light, #bfd6f6);
+  padding: 8px;
+  height: fit-content;
+  position: sticky;
+  top: 24px;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--admin-text-medium, #4a5568);
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm, 8px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  width: 100%;
+}
+
+.settings-nav-item:hover {
+  background-color: var(--admin-bg-light, #eaf2fb);
+  color: var(--admin-primary-blue, #1a5ca6);
+}
+
+.settings-nav-item.active {
+  background-color: var(--admin-primary-blue, #1a5ca6);
+  color: #ffffff;
+}
+
+/* === Content === */
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-section {
+  background: var(--admin-card-white, #ffffff);
+  border-radius: var(--admin-radius-md, 12px);
+  box-shadow: var(--admin-shadow-sm, 0 2px 8px rgba(26, 92, 166, 0.06));
+  border: 1px solid var(--admin-border-light, #bfd6f6);
+  padding: 32px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--admin-primary-blue, #1a5ca6);
+  margin: 0 0 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* === Form === */
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form-input,
+.form-textarea,
+select.form-input {
+  padding: 12px 16px;
+  border: 1px solid var(--admin-border-light, #bfd6f6);
+  border-radius: var(--admin-radius-sm, 8px);
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  background-color: #ffffff;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+select.form-input:focus {
+  border-color: var(--admin-primary-blue, #1a5ca6);
+  box-shadow: 0 0 0 3px rgba(26, 92, 166, 0.1);
+}
+
+/* === Setting Item === */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background-color: var(--admin-bg-light, #eaf2fb);
+  border-radius: var(--admin-radius-sm, 8px);
+  gap: 16px;
+}
+
+.setting-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+}
+
+.setting-icon {
+  color: var(--admin-primary-blue, #1a5ca6);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.setting-description {
+  font-size: 13px;
+  color: var(--admin-text-light, #64748b);
+  margin: 4px 0 0 0;
+  line-height: 1.5;
+}
+
+/* === Toggle Switch === */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.3s;
+  border-radius: 26px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--admin-primary-blue, #1a5ca6);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}

@@ -1,0 +1,286 @@
+.chatassist-shell {
+  background: #edf1f6;
+}
+
+.chatassist-help-box {
+  margin-top: auto;
+}
+
+.chatassist-main {
+  padding: 14px 18px 22px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chatassist-topbar {
+  margin-bottom: 14px;
+}
+
+.chatassist-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #1f3041;
+  font-weight: 700;
+}
+
+.chatassist-status-pill {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #d9f3fa;
+  color: #1c788d;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.chatassist-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chatassist-history-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.chatassist-history-chip {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #dcecf8;
+  color: #355271;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chatassist-history-chip.active {
+  background: #3d74c8;
+  color: #ffffff;
+}
+
+.chatassist-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.chatassist-bot-label {
+  margin: 12px 0 8px;
+  color: #315f9f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.chatassist-message {
+  border-radius: 18px;
+  border: 1px solid #dde4ee;
+  padding: 18px 20px;
+}
+
+.chatassist-message p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.chatassist-message p + p {
+  margin-top: 16px;
+}
+
+.chatassist-message.bot {
+  background: #f4f7fa;
+  color: #2d3d4d;
+}
+
+.chatassist-message.bot.intro {
+  margin-bottom: 18px;
+}
+
+.chatassist-message.user {
+  margin: 18px 0 4px auto;
+  max-width: min(78%, 640px);
+  background: linear-gradient(135deg, #4b7fd4, #5d8fe6);
+  border-color: transparent;
+  color: #ffffff;
+}
+
+.chatassist-timestamp {
+  text-align: right;
+  color: #7d8da0;
+  font-size: 0.7rem;
+  margin-bottom: 18px;
+}
+
+.chatassist-block {
+  margin-bottom: 22px;
+}
+
+.chatassist-markdown {
+  color: #2f4152;
+  line-height: 1.7;
+}
+
+.chatassist-markdown p {
+  margin: 0 0 14px;
+}
+
+.chatassist-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.chatassist-reference-card {
+  margin-top: 16px;
+  border-left: 3px solid #306bca;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.chatassist-reference-title {
+  color: #2f5fae;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.chatassist-reference-card p {
+  margin-top: 8px;
+  color: #657b8e;
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.chatassist-reference-link {
+  margin-top: 10px;
+  border: 0;
+  background: transparent;
+  color: #2b67c6;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chatassist-empty-state {
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px dashed #cfdae7;
+  padding: 24px;
+  color: #6d8296;
+  text-align: center;
+}
+
+.chatassist-suggestions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.chatassist-suggestion-chip {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #d9ebf8;
+  color: #355271;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.chatassist-input-shell {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 42px 48px;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #dbe3ed;
+  box-shadow: 0 10px 20px rgba(34, 56, 82, 0.06);
+}
+
+.chatassist-icon-btn,
+.chatassist-send-btn {
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.chatassist-icon-btn {
+  width: 42px;
+  height: 42px;
+  color: #647a90;
+}
+
+.chatassist-input {
+  min-height: 42px;
+  max-height: 120px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  outline: none;
+  color: #2b4054;
+  font-family: inherit;
+  padding-top: 10px;
+}
+
+.chatassist-input::placeholder {
+  color: #97a8b8;
+}
+
+.chatassist-send-btn {
+  width: 48px;
+  height: 42px;
+  background: #3d74c8;
+  color: #ffffff;
+  font-size: 1rem;
+}
+
+.chatassist-send-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chatassist-footer-note {
+  margin-top: 10px;
+  text-align: center;
+  color: #94a3b5;
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+}
+
+@media (max-width: 980px) {
+  .chatassist-message.user {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 680px) {
+  .chatassist-main {
+    padding: 12px;
+  }
+
+  .chatassist-input-shell {
+    grid-template-columns: 36px minmax(0, 1fr) 36px 44px;
+    gap: 8px;
+  }
+
+  .chatassist-history-bar,
+  .chatassist-suggestions {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+}

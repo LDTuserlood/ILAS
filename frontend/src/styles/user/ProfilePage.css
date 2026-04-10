@@ -1,0 +1,654 @@
+/* ============================================================
+   ProfilePage / Settings – layout matching DashboardPage
+   ============================================================ */
+
+/* ---- Page shell ---- */
+.settings-page {
+  min-height: 100vh;
+  background: #edf1f6;
+  display: grid;
+  grid-template-columns: 168px 1fr;
+}
+
+/* Prevent AdminLayout fixed sidebar styles from breaking user settings layout */
+.settings-page > .admin-sidebar {
+  position: sticky;
+  inset: auto;
+  top: 0;
+  height: 100vh;
+  width: 168px;
+}
+
+/* ---- Sidebar (reuse udash-* classes) ---- */
+.udash-sidebar {
+  background: #eef2f7;
+  border-right: 1px solid #e2e8f0;
+  padding: 18px 6px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.udash-brand {
+  color: #5b8ef0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.udash-brand-link {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.udash-brand-link:hover .udash-brand,
+.udash-brand-link:hover .udash-brand-sub {
+  opacity: 0.9;
+}
+
+.udash-brand-sub {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+}
+
+.udash-nav {
+  margin-top: 12px;
+  display: grid;
+  gap: 3px;
+}
+
+.udash-nav-item {
+  min-height: 36px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  text-align: left;
+  padding: 0 10px;
+  font-size: 0.76rem;
+  color: #4b5563;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.udash-nav-item.active {
+  background: #6c96e9;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.udash-nav-item:hover {
+  background: #e8eef7;
+  color: #1f2937;
+}
+
+.udash-nav-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.udash-nav-label {
+  white-space: nowrap;
+}
+
+.udash-help-box {
+  border: 1px solid #d5deea;
+  border-radius: 7px;
+  background: #e8eef7;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.udash-help-box span {
+  color: #607387;
+  font-size: 0.7rem;
+}
+
+.udash-help-box button {
+  min-height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: #2f5fac;
+  color: #ffffff;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.udash-logout-btn {
+  min-height: 34px;
+  width: 100%;
+  border: 1px solid #d4deea;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #9d2d2d;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.udash-logout-btn:hover {
+  background: #fff3f3;
+  border-color: #efcaca;
+}
+
+.footer-link {
+  width: 100%;
+  border: none;
+  background: transparent;
+}
+
+/* ---- User footer in sidebar ---- */
+.settings-user-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px 4px;
+}
+
+.settings-user-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #1e8c9f;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.settings-user-name {
+  color: #233546;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.settings-user-role {
+  color: #748296;
+  font-size: 0.74rem;
+  margin-top: 1px;
+}
+
+/* ---- Loading state ---- */
+.settings-loading {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  gap: 14px;
+}
+
+.loading-spinner {
+  width: 42px;
+  height: 42px;
+  border: 4px solid #d6dde7;
+  border-top-color: #1d5bba;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Main area ---- */
+.settings-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ---- Topbar ---- */
+.settings-topbar {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  border-bottom: 1px solid #dde4ee;
+  background: #f3f6fa;
+}
+
+.settings-breadcrumb {
+  font-size: 0.88rem;
+  color: #6b7c91;
+}
+
+.breadcrumb-link {
+  color: #2563b8;
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover { text-decoration: underline; }
+
+.breadcrumb-sep { margin: 0 4px; }
+
+.settings-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #d5dce8;
+  border-radius: 50%;
+  background: #fdfefe;
+  color: #55677d;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+
+.settings-topbar-username {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #233546;
+}
+
+.settings-topbar-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #e97c3a;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: 1rem;
+}
+
+/* ---- Content ---- */
+.settings-content {
+  flex: 1;
+  padding: 28px 28px 40px;
+}
+
+.settings-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1c2d3d;
+  margin: 0 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.settings-subtitle {
+  font-size: 0.9rem;
+  color: #5c7085;
+  margin: 0 0 20px;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+/* ---- Messages ---- */
+.settings-msg {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.settings-msg.error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-left: 3px solid #ef4444;
+}
+
+.settings-msg.success {
+  background: #f0fdf4;
+  color: #15803d;
+  border-left: 3px solid #22c55e;
+}
+
+/* ---- Two-column grid ---- */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 18px;
+  align-items: start;
+}
+
+/* ---- Card ---- */
+.settings-card {
+  background: #ffffff;
+  border: 1px solid #dde4ee;
+  border-radius: 18px;
+  padding: 22px 22px 20px;
+  margin-bottom: 18px;
+}
+
+.settings-card:last-child { margin-bottom: 0; }
+
+/* Card header with icon + title/subtitle */
+.settings-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.settings-card-header-sm {
+  align-items: center;
+}
+
+.settings-card-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #e8f0fb;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.settings-card-icon-wrap.alerts {
+  background: #edf5ff;
+}
+
+.settings-card-header h3 {
+  margin: 0 0 2px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1c2d3d;
+}
+
+.settings-card-header-sm h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1c2d3d;
+}
+
+.settings-card-header p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7189a0;
+}
+
+/* ---- Form grid (2 cols) ---- */
+.settings-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-field-full {
+  margin-top: 4px;
+}
+
+.settings-field label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #56687a;
+  letter-spacing: 0.02em;
+}
+
+.settings-field input {
+  min-height: 40px;
+  border: 1px solid #d5dce8;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 0.9rem;
+  color: #253040;
+  background: #f6f8fb;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-field input:focus {
+  border-color: #2563b8;
+  background: #fff;
+}
+
+.settings-field input[readonly] {
+  background: #f0f3f7;
+  color: #7a8da0;
+  cursor: default;
+}
+
+.settings-field-hint {
+  font-size: 0.74rem;
+  color: #8a9baf;
+  margin-top: 3px;
+}
+
+/* ---- Form action buttons ---- */
+.settings-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.settings-save-btn {
+  min-height: 38px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 9px;
+  background: #2563b8;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.settings-save-btn:hover:not(:disabled) { background: #1d4f9a; }
+.settings-save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.settings-reset-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid #c8d4e4;
+  border-radius: 9px;
+  background: transparent;
+  color: #4d6278;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.settings-reset-btn:hover { background: #eef2f8; }
+
+/* ---- Password form ---- */
+.settings-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ---- Toggle rows ---- */
+.settings-toggles {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #edf1f7;
+}
+
+.settings-toggle-row:last-child { border-bottom: none; }
+
+.toggle-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #253040;
+}
+
+.toggle-sub {
+  font-size: 0.75rem;
+  color: #8a9baf;
+  margin-top: 2px;
+}
+
+/* Toggle pill button */
+.settings-toggle {
+  width: 42px;
+  height: 24px;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.settings-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+}
+
+.settings-toggle.on  { background: #2563b8; }
+.settings-toggle.off { background: #c8d4e4; }
+
+.settings-toggle.on::after  { left: 21px; }
+.settings-toggle.off::after { left: 3px; }
+
+/* ---- Language list ---- */
+.settings-lang-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-lang-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  border-bottom: 1px solid #edf1f7;
+  background: transparent;
+  font-size: 0.88rem;
+  color: #253040;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.settings-lang-item:last-child { border-bottom: none; }
+.settings-lang-item:hover { background: #f3f7fc; }
+
+.settings-lang-item.selected {
+  background: #eef4ff;
+  font-weight: 600;
+  color: #1d4f9a;
+}
+
+.lang-mark { font-size: 0.9rem; }
+.lang-mark.check { color: #2563b8; font-weight: 700; }
+.lang-mark.arrow { color: #a0b0c4; }
+
+/* ---- Security & Privacy card ---- */
+.settings-security-card {
+  margin-top: 20px;
+  background: #fff5f5;
+  border: 1px solid #fcd0d0;
+  border-radius: 18px;
+  padding: 22px 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.settings-security-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.settings-security-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.settings-security-left h3 {
+  margin: 0 0 4px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #7c1c1c;
+}
+
+.settings-security-left p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #a04040;
+  max-width: 50ch;
+  line-height: 1.45;
+}
+
+.settings-deactivate-btn {
+  min-height: 38px;
+  padding: 0 20px;
+  border: 1.5px solid #dc2626;
+  border-radius: 9px;
+  background: transparent;
+  color: #dc2626;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.settings-deactivate-btn:hover:not(:disabled) {
+  background: #dc2626;
+  color: white;
+}
+
+.settings-deactivate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .settings-page { grid-template-columns: 70px 1fr; }
+  .settings-page > .admin-sidebar { width: 70px; }
+  .settings-form-grid { grid-template-columns: 1fr; }
+  .settings-security-card { flex-direction: column; align-items: flex-start; }
+}
+

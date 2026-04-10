@@ -1,0 +1,20 @@
+package com.C1SE61.backend.dto.response.auth;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+public class LoginResponseDTO {
+    private String token;
+    private Integer userId;
+    private String username;
+    private String fullName; 
+    private String email;
+    private Integer roleId;
+    private String roleName;
+}

@@ -1,0 +1,550 @@
+.formhub-page-shell {
+  background: #edf1f6;
+}
+
+.formhub-main {
+  padding: 14px 18px 28px;
+}
+
+.formhub-topbar {
+  margin-bottom: 16px;
+}
+
+.formhub-topbar-title {
+  color: #233546;
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
+.formhub-hero h1 {
+  margin: 0;
+  color: #1d2d3b;
+  font-size: 2.05rem;
+  letter-spacing: -0.02em;
+}
+
+.formhub-hero p {
+  margin: 8px 0 0;
+  max-width: 72ch;
+  color: #5d7488;
+  line-height: 1.5;
+}
+
+.formhub-search-panel {
+  margin-top: 14px;
+}
+
+.formhub-search-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 16px;
+  background: #e7edf4;
+}
+
+.formhub-search-input {
+  flex: 1;
+  min-height: 42px;
+  border: 0;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 0 14px;
+  color: #385067;
+  outline: none;
+}
+
+.formhub-search-input::placeholder {
+  color: #8a9aad;
+}
+
+.formhub-search-btn {
+  min-width: 116px;
+  border: 0;
+  border-radius: 12px;
+  background: #c7e7fa;
+  color: #1d4b73;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formhub-category-row {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.formhub-chip {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #d9ebf8;
+  color: #31587f;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.formhub-chip.active {
+  background: #3e73c8;
+  color: #ffffff;
+}
+
+.formhub-message {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+.formhub-message.error {
+  background: #fef0f0;
+  color: #ba2e2e;
+  border: 1px solid #f1c7c7;
+}
+
+.formhub-section {
+  margin-top: 20px;
+}
+
+.formhub-section-heading {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.formhub-section-heading h2 {
+  margin: 0;
+  font-size: 1.22rem;
+  color: #223445;
+}
+
+.formhub-section-heading.split {
+  justify-content: space-between;
+}
+
+.formhub-section-heading.split span {
+  color: #5f7690;
+  font-size: 0.85rem;
+}
+
+.formhub-empty-state {
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #d7dee8;
+  padding: 30px;
+  color: #667b90;
+  text-align: center;
+}
+
+.formhub-featured-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 14px;
+}
+
+.formhub-featured-card {
+  border-radius: 22px;
+  border: 1px solid #d7dee8;
+  background: #ffffff;
+}
+
+.formhub-featured-card.large {
+  padding: 18px;
+}
+
+.formhub-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #c7f3fb;
+  color: #1d7d8c;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.formhub-featured-content {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 180px;
+  gap: 16px;
+  align-items: center;
+}
+
+.formhub-featured-copy h3 {
+  margin: 0;
+  color: #233445;
+  font-size: 1.85rem;
+  line-height: 1.08;
+}
+
+.formhub-featured-copy p {
+  margin: 14px 0 0;
+  color: #657b8e;
+  line-height: 1.55;
+}
+
+.formhub-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  color: #6d8093;
+  font-size: 0.82rem;
+}
+
+.formhub-action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.formhub-primary-btn,
+.formhub-secondary-btn,
+.formhub-library-btn,
+.formhub-cta-btn,
+.formhub-search-btn {
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.formhub-primary-btn {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #3d74c8;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formhub-primary-btn:hover,
+.formhub-search-btn:hover,
+.formhub-library-btn.primary:hover {
+  background: #2f5fa8;
+  color: #ffffff;
+}
+
+.formhub-primary-btn.full,
+.formhub-secondary-btn.full {
+  width: 100%;
+}
+
+.formhub-secondary-btn {
+  min-height: 40px;
+  border: 1px solid #d2dce9;
+  border-radius: 10px;
+  padding: 0 16px;
+  background: #ffffff;
+  color: #34506f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formhub-secondary-btn:hover,
+.formhub-library-btn:hover {
+  background: #eef3f9;
+}
+
+.formhub-preview-sheet {
+  height: 180px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f5f7 100%);
+  border: 1px solid #e3e7ec;
+  padding: 14px;
+  position: relative;
+  box-shadow: 0 16px 24px rgba(41, 66, 96, 0.08);
+}
+
+.formhub-file-badge {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 0 7px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.formhub-file-badge.docx,
+.formhub-file-pill.docx {
+  background: #69afe7;
+}
+
+.formhub-file-badge.pdf,
+.formhub-file-pill.pdf {
+  background: #ef6b6b;
+}
+
+.formhub-file-badge.other,
+.formhub-file-pill.other {
+  background: #6f88a6;
+}
+
+.formhub-preview-line {
+  height: 10px;
+  margin-top: 12px;
+  border-radius: 999px;
+  background: #d9dde2;
+}
+
+.formhub-preview-line.short {
+  width: 70%;
+}
+
+.formhub-preview-stamp {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 6px solid #e5e6e8;
+  transform: rotate(-14deg);
+}
+
+.formhub-featured-card.compact {
+  padding: 18px;
+  background: #e1e7ee;
+}
+
+.formhub-mini-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  color: #3d74c8;
+  font-weight: 800;
+}
+
+.formhub-featured-card.compact h3 {
+  margin: 18px 0 0;
+  color: #223445;
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.formhub-featured-card.compact p {
+  margin: 12px 0 18px;
+  color: #637789;
+  line-height: 1.55;
+}
+
+.formhub-library-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.formhub-library-card {
+  border-radius: 18px;
+  border: 1px solid #d8e0e9;
+  background: #ffffff;
+  padding: 16px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.formhub-library-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.formhub-file-pill {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.formhub-library-card h3 {
+  margin: 14px 0 8px;
+  color: #223445;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.formhub-library-card p {
+  margin: 0;
+  color: #6b7f92;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.formhub-library-actions {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr 64px;
+  gap: 8px;
+}
+
+.formhub-library-btn {
+  min-height: 34px;
+  border: 1px solid #d5dce8;
+  border-radius: 10px;
+  background: #f3f7fb;
+  color: #335272;
+  cursor: pointer;
+}
+
+.formhub-library-btn.primary {
+  background: #eaf1fa;
+  color: #2e5fa7;
+  border-color: #d8e3f2;
+}
+
+.formhub-pagination-loading {
+  margin-top: 16px;
+  text-align: center;
+  color: #56708a;
+}
+
+.formhub-pagination {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.formhub-page-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d3dce7;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #3a5878;
+  cursor: pointer;
+}
+
+.formhub-page-btn.active,
+.formhub-page-btn:hover {
+  background: #3d74c8;
+  color: #ffffff;
+  border-color: #3d74c8;
+}
+
+.formhub-cta {
+  margin-top: 24px;
+  border-radius: 22px;
+  border: 1px solid #d8e0e9;
+  background: #ffffff;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) 220px;
+  gap: 18px;
+  align-items: center;
+}
+
+.formhub-cta-copy h2 {
+  margin: 0;
+  color: #223445;
+  font-size: 2rem;
+}
+
+.formhub-cta-copy p {
+  margin: 14px 0 0;
+  color: #667b90;
+  line-height: 1.6;
+  max-width: 58ch;
+}
+
+.formhub-cta-btn {
+  margin-top: 18px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 18px;
+  background: #446b82;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.formhub-cta-btn:hover {
+  background: #355668;
+}
+
+.formhub-cta-visual {
+  height: 170px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #8b959d 0%, #6e7a85 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.formhub-cta-visual::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #d8fff6 50%, transparent 100%);
+}
+
+.formhub-cta-orb {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(215, 255, 247, 0.8) 0%, rgba(154, 215, 207, 0.4) 38%, rgba(255,255,255,0) 70%);
+  box-shadow: 0 0 30px rgba(200, 255, 240, 0.45);
+}
+
+@media (max-width: 1200px) {
+  .formhub-library-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .formhub-featured-grid,
+  .formhub-cta {
+    grid-template-columns: 1fr;
+  }
+
+  .formhub-featured-content {
+    grid-template-columns: 1fr;
+  }
+
+  .formhub-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .formhub-main {
+    padding: 12px;
+  }
+
+  .formhub-search-row {
+    flex-direction: column;
+  }
+
+  .formhub-library-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .formhub-action-row,
+  .formhub-library-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

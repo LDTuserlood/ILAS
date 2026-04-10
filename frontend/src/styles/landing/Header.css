@@ -1,0 +1,313 @@
+/* ==============================
+🌐 BASE HEADER (User + Editor)
+============================== */
+.lp-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 10px rgba(33, 150, 243, 0.08);
+  transition: all 0.3s ease;
+}
+
+.lp-header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 80px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ==============================
+🖼️ LOGO
+============================== */
+.lp-logo {
+  height: 100px;
+  transition: transform 0.3s ease;
+}
+.lp-logo:hover {
+  transform: scale(1.05) rotate(-3deg);
+}
+
+/* ==============================
+🧭 NAVIGATION MENU
+============================== */
+.lp-nav {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.lp-nav a {
+  color: #2c3e50;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 8px 14px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.lp-nav a:hover {
+  background: linear-gradient(135deg, #e3f2fd 0%, #d0f5e0 100%);
+  color: #1976d2;
+  transform: translateY(-1px);
+}
+
+.lp-nav a.active {
+  background: linear-gradient(135deg, #2196f3 0%, #22b573 100%);
+  color: white;
+  box-shadow: 0 2px 10px rgba(33, 150, 243, 0.3);
+}
+
+/* ==============================
+👤 USER MENU
+============================== */
+.lp-header-btns {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ===== Buttons ===== */
+.lp-btn {
+  padding: 12px 26px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-btn-primary {
+  background: linear-gradient(135deg, #2196f3 0%, #22b573 100%);
+  color: #fff;
+  border: none;
+}
+.lp-btn-primary:hover {
+  background: linear-gradient(135deg, #1976d2 0%, #1e9e63 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(33, 150, 243, 0.3);
+}
+
+.lp-btn-outline {
+  background: #fff;
+  color: #1976d2;
+  border: 2px solid #1976d2;
+}
+.lp-btn-outline:hover {
+  background: #1976d2;
+  color: #fff;
+}
+
+/* ==============================
+🎛️ DROPDOWN BUTTON (USER)
+============================== */
+.user-menu {
+  position: relative;
+}
+
+.user-dropdown-toggle {
+  background: linear-gradient(135deg, #1976d2 0%, #42a5f5 50%, #22b573 100%);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: all 0.4s ease;
+  box-shadow: 0 6px 18px rgba(25, 118, 210, 0.25);
+  min-width: 200px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure text inside the button stays white */
+.user-dropdown-toggle .user-name,
+.user-dropdown-toggle .dropdown-arrow {
+  color: #fff;
+}
+
+.user-dropdown-toggle:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.4);
+}
+
+.user-dropdown-toggle.active {
+  transform: translateY(-2px);
+}
+
+.dropdown-arrow {
+  font-size: 12px;
+  transition: all 0.4s ease;
+  background: rgba(255, 255, 255, 0.25);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-dropdown-toggle.active .dropdown-arrow {
+  transform: rotate(180deg);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ==============================
+📋 DROPDOWN MENU PANEL
+============================== */
+.user-dropdown-menu {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(25, 118, 210, 0.15);
+  min-width: 220px;
+  overflow: hidden;
+  z-index: 1000;
+  animation: dropdownFadeIn 0.3s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  color: #2c3e50;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  gap: 12px;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
+  color: #1976d2;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(25, 118, 210, 0.15), transparent);
+  margin: 4px 0;
+}
+
+.logout-item {
+  color: #e74c3c;
+}
+.logout-item:hover {
+  background: linear-gradient(135deg, #fdecea 0%, #f8d7da 100%);
+  color: #c0392b;
+}
+
+/* ==============================
+🌈 EDITOR HEADER (ĐỒNG MÀU USER)
+============================== */
+.editor-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 10px rgba(33, 150, 243, 0.08);
+}
+
+.editor-header .lp-nav a {
+  color: #2c3e50;
+}
+
+.editor-header .lp-nav a:hover {
+  background: linear-gradient(135deg, #e3f2fd 0%, #d0f5e0 100%);
+  color: #1976d2;
+}
+
+.editor-header .lp-nav a.active {
+  background: linear-gradient(135deg, #2196f3 0%, #22b573 100%);
+  color: white;
+}
+
+/* ==============================
+📱 RESPONSIVE (MOBILE)
+============================== */
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #1976d2;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.menu-toggle:hover {
+  transform: rotate(90deg);
+}
+
+@media (max-width: 900px) {
+  .lp-header-content {
+    padding: 0 20px;
+  }
+
+  .lp-nav {
+    display: none;
+    flex-direction: column;
+    background: white;
+    position: absolute;
+    top: 80px;
+    left: 0;
+    width: 100%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-top: 1px solid #eee;
+    text-align: center;
+    padding: 20px 0;
+    gap: 16px;
+    z-index: 99;
+  }
+
+  .lp-nav.show {
+    display: flex;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  .lp-logo {
+    height: 80px;
+  }
+
+  .lp-header-btns {
+    gap: 8px;
+  }
+
+  .user-dropdown-toggle {
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+}

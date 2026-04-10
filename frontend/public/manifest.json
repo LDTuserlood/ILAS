@@ -1,0 +1,26 @@
+﻿{
+  "short_name": "ILAS",
+  "name": "Legal Support System for Workers",
+  "icons": [
+    {
+      "src": "image/ilas.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "image/ilas.ico",
+      "type": "image/x-icon",
+      "sizes": "192x192"
+    },
+    {
+      "src": "image/ilas.ico",
+      "type": "image/x-icon",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1976d2",
+  "background_color": "#ffffff"
+}
+

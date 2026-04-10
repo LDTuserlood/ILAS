@@ -1,0 +1,13 @@
+flask
+flask-cors
+requests
+python-dotenv
+pymysql
+beautifulsoup4
+playwright
+lxml
+flask-cors
+sentence_transformers
+rank_bm25
+numpy
+scikit-learn
