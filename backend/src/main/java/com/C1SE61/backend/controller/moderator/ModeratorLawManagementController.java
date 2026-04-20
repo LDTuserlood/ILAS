@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/moderator/laws")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasAnyAuthority('Admin', 'ADMIN', 'Moderator', 'MODERATOR', 'moderator')")
+@PreAuthorize("hasAnyAuthority('Admin', 'ADMIN', 'Moderator', 'MODERATOR', 'moderator', 'Editor', 'EDITOR', 'editor')")
 public class ModeratorLawManagementController {
 
     private final ModeratorLawManagementService lawManagementService;

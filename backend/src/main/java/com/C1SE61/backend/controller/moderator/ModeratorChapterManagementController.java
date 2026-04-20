@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/moderator/chapters")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
-@PreAuthorize("hasAnyAuthority('Admin', 'ADMIN', 'Moderator', 'MODERATOR', 'moderator')")
+@PreAuthorize("hasAnyAuthority('Admin', 'ADMIN', 'Moderator', 'MODERATOR', 'moderator', 'Editor', 'EDITOR', 'editor')")
 public class ModeratorChapterManagementController {
 
     private final ModeratorChapterManagementService chapterManagementService;

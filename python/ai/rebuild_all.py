@@ -9,6 +9,8 @@ if __name__ == "__main__":
     print("🚀 REBUILDING ALL AI COMPONENTS...")
 
     # 1) Build vector store
+    run("python -m ai.build_vector_store")         # <--- BỔ SUNG DÒNG NÀY (Để nạp luật gốc)
+    run("python -m ai.build_vector_store_faq")     # <--- BỔ SUNG DÒNG NÀY (Để nạp FAQ)
     run("python -m ai.build_vector_store_chunks")
     
     run("python -m ai.build_vector_store_simplified")

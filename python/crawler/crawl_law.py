@@ -109,7 +109,8 @@ def crawl_law_page(url: str):
 
             # ARCHIVE
             log_step("Đang archive các luật khác")
-            archive_other_laws(cur, law_id)
+            # ĐÃ ĐÓNG TÍNH NĂNG NÀY ĐỂ TRÁNH LỖI VÔ HIỆU HÓA LUẬT KHÁC
+            # archive_other_laws(cur, law_id)
 
             log_step("Đang archive dữ liệu cũ của luật")
             archive_old_data(cur, law_id)

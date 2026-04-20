@@ -73,7 +73,9 @@ public class SecurityConfig {
             .requestMatchers("/api/users/**").authenticated()
             .requestMatchers("/api/moderator/**").hasAnyAuthority(
                 "Admin", "ADMIN", "admin",
-                "Moderator", "MODERATOR", "moderator"
+                "Moderator", "MODERATOR", "moderator",
+                "Editor", "EDITOR", "editor"
+                
             )
             .requestMatchers("/api/admin/**").hasAnyAuthority("Admin", "ADMIN", "admin")
             .anyRequest().authenticated()

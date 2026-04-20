@@ -1,4 +1,3 @@
-# ai/retrieval_level6.py
 import numpy as np
 from pathlib import Path
 import json
@@ -27,7 +26,7 @@ def detect_article_number(query: str):
 # 2) INTENT ROUTING – TỐI ƯU NHẤT
 # ======================================
 INTENT_TO_ARTICLES = {
-    "nghi_viec": [35, 36, 48, 56],
+    "nghi_viec": [35, 36, 46, 47, 48, 56],
     "bao_truoc": [35],
     "sa_thai": [125],
     "5_ngay": [125],
@@ -42,51 +41,30 @@ INTENT_TO_ARTICLES = {
 def detect_intent(query: str):
     q = query.lower()
 
-    # Nghỉ việc – chủ đề quan trọng nhất
-    if any(k in q for k in [
-        "nghỉ việc", "nghi viec", "thôi việc", "thoi viec",
-        "xin nghỉ", "xin nghi", "nghỉ làm", "bo viec"
-    ]):
+    if any(k in q for k in ["nghỉ việc", "nghi viec", "thôi việc", "thoi viec", "xin nghỉ", "xin nghi", "nghỉ làm", "bo viec"]):
         return "nghi_viec"
-
-    # Báo trước
     if "báo trước" in q or "bao truoc" in q:
         return "bao_truoc"
-
-    # Sa thải
     if any(k in q for k in ["sa thải", "sa thai", "đuổi việc", "duoi viec"]):
         return "sa_thai"
-
-    # Nghỉ 5 ngày
     if "5 ngày" in q or "05 ngày" in q or "5 ngay" in q:
         return "5_ngay"
-
-    # Nghỉ lễ
     if any(k in q for k in ["nghỉ lễ", "nghi le", "lễ", "le"]):
         return "nghi_le"
-
-    # Nghỉ năm
     if any(k in q for k in ["nghỉ năm", "nghi nam", "nghỉ hằng năm", "nghi hang nam", "nghỉ phép"]):
         return "nghi_nam"
-
-    # Ngừng việc
     if any(k in q for k in ["ngừng việc", "ngung viec", "ngừng làm", "ngung lam"]):
         return "ngung_viec"
-
-    # Làm thêm giờ
     if any(k in q for k in ["làm thêm", "lam them", "tăng ca", "tang ca", "làm thêm giờ"]):
         return "lam_them"
-
-    # Thử việc
     if any(k in q for k in ["thử việc", "thu viec"]):
         return "thu_viec"
 
     return None
 
 
-
 # ======================================
-# LOAD SOURCE
+# LOAD SOURCE (ĐÃ SỬA CHUẨN)
 # ======================================
 def load_source(name: str):
     vec_path = DATA_DIR / name / "vectors.npy"
@@ -97,7 +75,6 @@ def load_source(name: str):
         return None
 
     vectors = np.load(vec_path)
-    # Guard against empty or 1D vectors that would break cosine_similarity
     if vectors.size == 0 or vectors.ndim != 2:
         print(f"[RAG] SKIP {name} → invalid vectors shape {vectors.shape}")
         return None
@@ -118,11 +95,13 @@ def load_source(name: str):
         "topic_centroids": topic_centroids
     }
 
-
-ARTICLES = load_source("articles/chunks") or load_source("articles")
+# BẢN VÁ SỐ 1: Tải đủ 3 nguồn độc lập thay vì gộp chung
+ARTICLES = load_source("articles")
+ARTICLES_CHUNKS = load_source("articles/chunks")
 SIMPLIFIED = load_source("simplified")
 
-SOURCES = [ARTICLES, SIMPLIFIED]
+# Lọc bỏ những nguồn bị None
+SOURCES = list(filter(None, [ARTICLES, ARTICLES_CHUNKS, SIMPLIFIED]))
 
 
 def get_source_by_name(name: str):
@@ -130,7 +109,6 @@ def get_source_by_name(name: str):
         if s and s["name"] == name:
             return s
     return None
-
 
 
 # ======================================
@@ -150,6 +128,7 @@ def semantic_retrieve(source, query_vec, top_k=20):
             "id": meta[i]["id"],
             "text": meta[i]["text"],
             "source": source["name"],
+            "article_id": meta[i].get("article_id"), # THÊM DÒNG NÀY ĐỂ TRÁNH LỖI CONTEXT BUILDER
             "article_number": meta[i].get("article_number"),
             "clause_number": meta[i].get("clause_number"),
             "law_title": meta[i].get("law_title"),
@@ -157,7 +136,6 @@ def semantic_retrieve(source, query_vec, top_k=20):
             "topic_cluster": meta[i].get("topic_cluster", None)
         })
     return results
-
 
 
 # ======================================
@@ -186,9 +164,8 @@ def subject_score(text, subject):
     return 0.0
 
 
-
 # ======================================
-# RANK SCORE
+# RANK SCORE (ĐÃ VÁ LỖI)
 # ======================================
 SOURCE_PRIORITY = {
     "articles/chunks": 0.12,
@@ -204,9 +181,8 @@ def fusion_rank(query, query_vec, sem_results):
     for r in sem_results:
         src = r["source"]
 
-        if not is_labor_question(query.lower()):
-            if src.startswith("articles"):
-                continue
+        # BẢN VÁ SỐ 2: ĐÃ XÓA BỎ LỆNH CẤM LUẬT THI HÀNH Ở ĐÂY
+        # Hệ thống giờ đây sẽ nhận diện mọi bộ luật một cách bình đẳng.
 
         semantic_score = r["semantic_score"]
 
@@ -217,7 +193,7 @@ def fusion_rank(query, query_vec, sem_results):
             bm25_score = 0.0
 
         subject_bonus = subject_score(r["text"], subject)
-        topic_boost_score = topic_boost(query.lower(), r["text"].lower())
+        topic_boost_score = 0.0
         priority = SOURCE_PRIORITY.get(src, 0.0)
 
         final_score = (
@@ -234,13 +210,11 @@ def fusion_rank(query, query_vec, sem_results):
     return fused[:15]
 
 
-
 # ======================================
 # MAIN RETRIEVAL
 # ======================================
 def retrieve_multi_source(query: str, source_filter="all"):
 
-    # FE → internal mapping
     mapping = {
         "laws": "articles/chunks",
         "content": "simplified",
@@ -280,9 +254,9 @@ def retrieve_multi_source(query: str, source_filter="all"):
         if not source:
             continue
 
-        # Áp dụng FILTER: chỉ lấy đúng nguồn FE yêu cầu
         if selected_source != "all" and source["name"] != selected_source:
-            continue
+            if not (selected_source == "articles/chunks" and source["name"] == "articles"):
+                continue
 
         sem_results += semantic_retrieve(source, query_vec)
 

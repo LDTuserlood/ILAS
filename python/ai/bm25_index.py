@@ -4,7 +4,8 @@ import json
 from typing import Dict, List, Any
 from rank_bm25 import BM25Okapi
 import pickle
-
+import os
+import json
 DATA_DIR = Path(__file__).resolve().parents[1] / "vector_store"
 INDEX_DIR = Path(__file__).resolve().parents[1] / "bm25_index"
 INDEX_DIR.mkdir(exist_ok=True)
@@ -20,6 +21,10 @@ def tokenize(text: str) -> List[str]:
 
 def _load_meta(source: str) -> List[Dict[str, Any]]:
     meta_path = DATA_DIR / source / "meta.json"
+    # Thêm 3 dòng này để kiểm tra file, không có thì bỏ qua an toàn
+    if not os.path.exists(meta_path):
+        print(f"[BM25] Bỏ qua {source} vì không tìm thấy meta.json")
+        return []
     with open(meta_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

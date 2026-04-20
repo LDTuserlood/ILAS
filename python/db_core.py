@@ -18,11 +18,11 @@ load_dotenv(dotenv_path=ENV_PATH)
 # ---------------------------
 # Config DB & Pool
 # ---------------------------
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", 3306))
-DB_USER = os.getenv("DB_USER", "root")
-DB_PASS = os.getenv("DB_PASS", "halo20231")
-DB_NAME = os.getenv("DB_NAME", "ilas_db")
+DB_HOST = "localhost"
+DB_PORT = 3306
+DB_USER = "root"
+DB_PASS = "1292004"        # Gõ thẳng pass của bạn vào đây
+DB_NAME = "ilas_db"
 DB_CHARSET = "utf8mb4"
 
 # Pool size có thể chỉnh qua .env
@@ -107,15 +107,18 @@ class _SimplePool:
                 pass
 
 # Khởi tạo pool ngay khi import
-_pool = _SimplePool(size=max(1, POOL_SIZE))
+_pool = None
 
+def _get_pool():
+    global _pool
+    if _pool is None:
+        _pool = _SimplePool(size=max(1, POOL_SIZE))
+    return _pool
 def get_connection():
-    """Lấy connection từ pool (giữ API tương thích)."""
-    return _pool.get()
+    return _get_pool().get()
 
 def release_connection(conn):
-    """Trả connection về pool."""
-    _pool.put(conn)
+    _get_pool().put(conn)
     
 def execute_query(
     query: str,
@@ -184,4 +187,5 @@ def ping() -> bool:
             release_connection(conn)
 
 def close_all_connections():
-    _pool.close_all()
+    if _pool:
+        _pool.close_all()

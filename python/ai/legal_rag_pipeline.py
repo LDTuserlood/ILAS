@@ -13,6 +13,7 @@ load_dotenv(dotenv_path=env_path)
 
 from ai.retrieval_level6 import retrieve_multi_source
 from ai.context_builder import build_context
+from ai.groq_service import guarded_completion, fallback_general_answer, rewrite_legal_query
 import time
 
 # DYNAMIC MODEL SELECTION
@@ -61,6 +62,9 @@ def answer_legal_question(query: str, settings: dict = None):
 
     # 2) Filter nguồn dữ liệu
     source_filter = settings.get("dataSource", "all")
+    #optimized_query = rewrite_legal_query(query)
+    #print(f"🔍 Câu hỏi gốc: {query}")
+    #print(f"🚀 Câu tối ưu: {optimized_query}")
 
     try:
         # 3) Retrieval (có filter nguồn)
@@ -101,7 +105,7 @@ def answer_legal_question(query: str, settings: dict = None):
 
             answer = guarded_completion(
                 context=context,
-                question=query,
+                question=query, # LƯU Ý: Chỗ này VẪN GIỮ NGUYÊN là 'query' gốc nhé
                 temperature=float(temperature),
                 max_tokens=int(max_tokens)
             )
@@ -160,6 +164,7 @@ def answer_legal_question(query: str, settings: dict = None):
             "source": None,
             "fallback": False
         }
+    
 
 
 

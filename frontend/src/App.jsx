@@ -98,7 +98,8 @@ const router = createBrowserRouter([
   {
     path: "/moderator",
     element: (
-      <PrivateRoute allowedRoles={["MODERATOR", "MODERATOR"]}>
+      // Cho phép cả EDITOR hoặc MODERATOR đi qua cho chắc ăn
+      <PrivateRoute allowedRoles={["EDITOR", "MODERATOR"]}>
         <ModeratorLayout />
       </PrivateRoute>
     ),

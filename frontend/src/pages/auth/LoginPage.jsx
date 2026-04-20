@@ -78,7 +78,7 @@ export default function Login() {
 
         if (role === "ADMIN") {
           navigate("/admin/dashboard");
-        } else if (role === "MODERATOR" || role === "MODERATOR") {
+        } else if (role === "EDITOR" || role === "MODERATOR") { // ✅ Đã thêm "EDITOR"
           navigate("/moderator/dashboard");
         } else {
           navigate("/user/dashboard");

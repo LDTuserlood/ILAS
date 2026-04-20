@@ -75,11 +75,15 @@ def build_chunk_store():
             vectors.append(emb)
 
             metadata.append({
-                "id": f"article_{art['article_number']}_chunk_{idx}",
+                # Đổi từ article_ sang art_ để khớp với context_builder
+                "id": f"art_{art['article_id']}_chunk_{idx}",
+                "article_id": art["article_id"], 
                 "article_number": art["article_number"],
                 "law_title": art["article_title"],
                 "clause_number": extract_clause_number(chunk_text),
                 "text": chunk_text,
+                
+                # SỬA DÒNG NÀY (XÓA CHỮ /chunks ĐI):
                 "source_type": "articles"
             })
 

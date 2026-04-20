@@ -1,5 +1,3 @@
-# ai/groq_service.py — ILAS Legal Edition (Optimized + Supports Settings)
-
 import os
 import requests
 from dotenv import load_dotenv
@@ -62,7 +60,7 @@ def guarded_completion(
 ) -> str:
     """
     ILAS Legal Answer Engine — Strict + Summarization Mode
-    (GIỮ NGUYÊN NGUYÊN TẮC CỦA BẠN)
+    (Đã tối ưu để AI nói chuyện TỰ NHIÊN, THÂN THIỆN)
     """
 
     # Ép kiểu an toàn (FE hay gửi "0.7", "500" dạng string)
@@ -77,40 +75,15 @@ def guarded_completion(
         max_tokens = 900
 
     system_prompt = """
-Bạn là trợ lý pháp lý của hệ thống ILAS, chỉ tư vấn dựa trên văn bản pháp luật Việt Nam.
+Bạn là một chuyên viên tư vấn pháp luật lao động thân thiện, tận tâm và chuyên nghiệp của nền tảng ILAS.
+Nhiệm vụ của bạn là giải đáp thắc mắc cho người lao động dựa TRÊN ĐÚNG NGỮ CẢNH LUẬT được cung cấp.
 
-NGUYÊN TẮC TRẢ LỜI:
-
-1. NGUỒN DUY NHẤT
-- Chỉ được sử dụng thông tin trong phần "NGỮ CẢNH PHÁP LUẬT".
-- Không được dùng kiến thức ngoài hoặc phỏng đoán.
-
-2. TRÍCH DẪN
-- Nếu văn bản trong ngữ cảnh có Điều/Khoản/Điểm → phải trích dẫn đúng.
-- Nếu không có số điều → không được tự đặt.
-
-3. KHÔNG ĐƯỢC BỊA
-- Không thêm quy định, thời hạn, phần trăm, ngày, nghĩa vụ… nếu không xuất hiện trong ngữ cảnh.
-- Không được suy luận thêm theo kinh nghiệm.
-
-4. TỔNG HỢP HỢP LÝ
-- Nếu các điểm/khoản trong ngữ cảnh có số liệu, bạn được phép tổng hợp.
-- Đây không được xem là bịa vì dựa 100% vào dữ liệu trong ngữ cảnh.
-
-5. TRẢ LỜI THEO ĐỐI TƯỢNG
-- Nếu điều luật chia thành nhiều nhóm đối tượng, phải trình bày tách riêng.
-
-6. THIẾU THÔNG TIN
-- Nếu ngữ cảnh không có thông tin cần thiết → trả lời:
-  "Hiện tại tôi không tìm thấy quy định phù hợp trong dữ liệu ILAS."
-
-7. PHONG CÁCH TRẢ LỜI
-- Trả lời ngắn gọn.
-- Chỉ nêu kết luận và số liệu quan trọng.
-
-8. TÍNH TOÁN CHÍNH XÁC
-- Khi tổng hợp số liệu: liệt kê phép tính (ví dụ: 1 + 5 + 1 ...)
-- Kiểm tra lại để đảm bảo kết quả chính xác.
+=== QUY TẮC TRẢ LỜI BẮT BUỘC ===
+1. GIỌNG ĐIỆU TỰ NHIÊN: Xưng "tôi" và gọi người dùng là "bạn". Trả lời tự nhiên, thân thiện như đang trò chuyện tư vấn. Diễn giải lại các từ ngữ pháp lý khô khan thành ngôn ngữ đơn giản, dễ hiểu đối với người công nhân bình thường.
+2. NGUỒN DUY NHẤT: Chỉ được sử dụng thông tin trong phần "NGỮ CẢNH PHÁP LUẬT". Không được dùng kiến thức ngoài, không suy diễn, không tự bịa ra số liệu/ngày tháng.
+3. TRÍCH DẪN KHÉO LÉO: Luôn đi thẳng vào vấn đề trả lời câu hỏi trước (Ví dụ: "Mức trợ cấp của bạn là..."), sau đó mới giải thích chi tiết dựa theo Điều mấy của luật trong ngữ cảnh.
+4. TỔNG HỢP HỢP LÝ: Nếu các điểm/khoản trong ngữ cảnh có số liệu, bạn được phép tổng hợp và tính toán (liệt kê rõ phép tính).
+5. THIẾU THÔNG TIN: Nếu ngữ cảnh không có thông tin cần thiết → trả lời tự nhiên: "Rất tiếc, theo dữ liệu hiện tại của hệ thống ILAS, tôi chưa tìm thấy quy định cụ thể về vấn đề này để hỗ trợ bạn."
 """
 
     user_prompt = f"""
@@ -119,14 +92,8 @@ NGỮ CẢNH PHÁP LUẬT (trích từ cơ sở dữ liệu ILAS):
 {context}
 -------------------------------------------------
 
-CÂU HỎI:
+CÂU HỎI CỦA NGƯỜI DÙNG:
 {question}
-
-YÊU CẦU TRẢ LỜI:
-- Dựa 100% trên nội dung trong ngữ cảnh.
-- Không được suy diễn.
-- Nếu luật chia nhóm đối tượng → trình bày tách riêng.
-- Nếu thiếu thông tin trong ngữ cảnh → nói rõ là không tìm thấy.
 """
 
     messages = [
@@ -143,9 +110,9 @@ def fallback_general_answer(question: str) -> str:
     Không dựa trên context ILAS.
     """
     system_prompt = """
-Bạn là trợ lý pháp lý tổng quát.
-Hãy trả lời dựa trên kiến thức phổ biến, KHÔNG dùng context luật.
-Trả lời ngắn gọn, dễ hiểu.
+Bạn là trợ lý pháp lý tổng quát của ILAS. Hãy xưng "tôi" và gọi "bạn" thân thiện.
+Hãy trả lời câu hỏi dưới đây dựa trên kiến thức phổ biến, KHÔNG dùng context luật.
+Trả lời ngắn gọn, dễ hiểu cho người công nhân.
 Không trích dẫn điều khoản cụ thể.
 """
 
@@ -156,3 +123,31 @@ Không trích dẫn điều khoản cụ thể.
 
     return _post_to_groq(messages, temperature=0.5, max_tokens=500)
 
+
+def rewrite_legal_query(user_question: str) -> str:
+    """
+    Sử dụng AI để chuyển câu hỏi tự nhiên thành cụm từ khóa pháp lý chuẩn.
+    Giúp Semantic Search tìm luật chính xác hơn.
+    """
+    system_prompt = """
+Bạn là chuyên gia phân tích ngôn ngữ pháp lý. 
+Nhiệm vụ của bạn là chuyển đổi câu hỏi thông tục của người dùng thành MỘT CÂU TRUY VẤN TỪ KHÓA pháp lý chuẩn xác để tìm kiếm trong cơ sở dữ liệu luật lao động.
+
+QUY TẮC BẮT BUỘC:
+1. CHỈ TRẢ VỀ DUY NHẤT CÂU TRUY VẤN đã tối ưu. KHÔNG có câu chào, KHÔNG giải thích, KHÔNG ngoặc kép.
+2. Dùng đúng thuật ngữ luật (VD: "nghỉ đẻ" -> "chế độ thai sản", "đuổi việc" -> "đơn phương chấm dứt hợp đồng", "đền bao nhiêu" -> "mức bồi thường").
+"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f'Hãy tối ưu câu hỏi này: "{user_question}"'},
+    ]
+
+    # Gọi AI bằng hàm _post_to_groq có sẵn, temp thấp để câu từ chuẩn xác
+    optimized = _post_to_groq(messages, temperature=0.1, max_tokens=100)
+    
+    # Nếu AI lỗi hoặc trả về rỗng, dùng tạm câu hỏi cũ
+    if not optimized or "Hệ thống AI đang gặp sự cố" in optimized or "JSON error" in optimized:
+        return user_question
+        
+    return optimized.strip()
