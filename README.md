@@ -105,7 +105,7 @@ python -m venv venv
 ```bash
 # Windows
 venv\Scripts\activate
-
+python -m ai.app
 # Linux/Mac
 source venv/bin/activate
 ```
