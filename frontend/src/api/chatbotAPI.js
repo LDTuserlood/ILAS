@@ -51,6 +51,15 @@ export const sendChatMessage = async (userId, question, saveLog = true, conversa
   }
 };
 
+export const sendChatFeedback = async (chatId, feedbackStatus, reason = "") => {
+  const token = localStorage.getItem("token");
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const payload = { feedbackStatus, reason };
+
+  const res = await api.post(`/logs/${chatId}/feedback`, payload, { headers });
+  return res.data;
+};
+
 export async function getChatHistory(userId) {
   const token = localStorage.getItem("token");
 
@@ -93,6 +102,7 @@ export async function clearChatHistory(userId) {
 
 const chatbotAPI = {
   sendChatMessage,
+  sendChatFeedback,
 };
 
 export default chatbotAPI;

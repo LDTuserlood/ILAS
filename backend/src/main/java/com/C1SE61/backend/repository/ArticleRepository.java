@@ -41,6 +41,32 @@ public interface ArticleRepository extends JpaRepository<Article, Integer> {
            "LOWER(a.articleNumber) LIKE LOWER(CONCAT('%', :keyword, '%')))")
     Page<Article> searchArticles(@Param("keyword") String keyword, Pageable pageable);
 
+    @Query(value = "SELECT a FROM Article a " +
+           "LEFT JOIN FETCH a.law " +
+           "LEFT JOIN FETCH a.chapter " +
+           "WHERE LOWER(a.articleTitle) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(a.content) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(a.articleNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))",
+           countQuery = "SELECT COUNT(a) FROM Article a WHERE " +
+           "LOWER(a.articleTitle) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(a.content) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+           "LOWER(a.articleNumber) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Article> searchArticlesForModerator(@Param("keyword") String keyword, Pageable pageable);
+
+    @Query(value = "SELECT a FROM Article a " +
+           "LEFT JOIN FETCH a.law " +
+           "LEFT JOIN FETCH a.chapter " +
+           "WHERE a.law.lawId = :lawId",
+           countQuery = "SELECT COUNT(a) FROM Article a WHERE a.law.lawId = :lawId")
+    Page<Article> findByLawIdForModerator(@Param("lawId") Integer lawId, Pageable pageable);
+
+    @Query(value = "SELECT a FROM Article a " +
+           "LEFT JOIN FETCH a.law " +
+           "LEFT JOIN FETCH a.chapter " +
+           "WHERE a.chapter.chapterId = :chapterId",
+           countQuery = "SELECT COUNT(a) FROM Article a WHERE a.chapter.chapterId = :chapterId")
+    Page<Article> findByChapterIdForModerator(@Param("chapterId") Integer chapterId, Pageable pageable);
+
     // Tìm kiếm articles trong một luật cụ thể (chỉ khi law.status = 'active')
     @Query(value = "SELECT a.* FROM articles a " +
            "INNER JOIN laws l ON a.law_id = l.law_id " +

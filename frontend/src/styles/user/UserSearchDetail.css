@@ -173,6 +173,215 @@
   letter-spacing: -0.02em;
 }
 
+.userdetail-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.userdetail-title-row h1 {
+  margin-top: 8px;
+}
+
+.userdetail-title-row p {
+  margin-top: 8px;
+  color: #5f7186;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.userdetail-back-link {
+  min-height: 34px;
+  border: 1px solid #cfdae8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #315b91;
+  font-weight: 700;
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.userdetail-mode-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.userdetail-mode-actions button,
+.userdetail-chat-cta {
+  min-height: 38px;
+  border: 1px solid #cfdae8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #36506b;
+  font-weight: 800;
+  padding: 0 14px;
+  cursor: pointer;
+}
+
+.userdetail-mode-actions button.active,
+.userdetail-chat-cta {
+  border-color: #2a67c2;
+  background: #2a67c2;
+  color: #ffffff;
+}
+
+.userdetail-meta-strip {
+  margin-top: 14px;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.userdetail-meta-strip span {
+  min-height: 28px;
+  border-radius: 999px;
+  background: #eef4fb;
+  color: #435a73;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.userdetail-summary-page {
+  margin-top: 16px;
+  border: 1px solid #dbe3ee;
+  border-radius: 20px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.userdetail-summary-page h2 {
+  margin: 0 0 12px;
+  color: #253747;
+  font-size: 1.35rem;
+}
+
+.userdetail-summary-page .summary-content-body {
+  max-height: none;
+}
+
+.userdetail-chat-cta {
+  margin-top: 14px;
+}
+
+.userdetail-law-reader {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.userdetail-chapter-list {
+  position: sticky;
+  top: 12px;
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  max-height: calc(100vh - 90px);
+  overflow: auto;
+}
+
+.userdetail-chapter-list button {
+  min-height: 36px;
+  border: 1px solid #e0e7f0;
+  border-radius: 9px;
+  background: #f8fbff;
+  color: #41566d;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.userdetail-chapter-list button.active {
+  border-color: #2a67c2;
+  background: #eaf2ff;
+  color: #235aa8;
+}
+
+.userdetail-article-reader {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.law-reader-chapter {
+  border: 1px solid #dbe3ee;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.law-reader-chapter h2 {
+  margin: 0 0 12px;
+  color: #263747;
+  font-size: 1.16rem;
+}
+
+.law-reader-article {
+  border: 1px solid #e1e8f1;
+  border-radius: 14px;
+  background: #fbfdff;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.law-reader-article.selected {
+  margin-bottom: 14px;
+  border-color: #abc2e4;
+}
+
+.law-reader-article-title {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #263747;
+  text-align: left;
+  cursor: pointer;
+}
+
+.law-reader-article-title strong {
+  color: #2a67c2;
+  white-space: nowrap;
+}
+
+.law-reader-article-title span {
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.law-reader-preview {
+  margin: 8px 0 0;
+  color: #66798c;
+  line-height: 1.6;
+}
+
+.userdetail-content-body.expanded {
+  max-height: none;
+  margin-top: 10px;
+}
+
+.userdetail-content-body.expanded p {
+  margin: 0 0 10px;
+}
+
 .userdetail-searchbox {
   margin-top: 14px;
   display: flex;
@@ -656,6 +865,15 @@
     border-top: 1px solid #dde3ec;
     min-height: 320px;
   }
+
+  .userdetail-law-reader {
+    grid-template-columns: 1fr;
+  }
+
+  .userdetail-chapter-list {
+    position: static;
+    max-height: none;
+  }
 }
 
 @media (max-width: 860px) {
@@ -674,6 +892,19 @@
 @media (max-width: 700px) {
   .userdetail-center h1 {
     font-size: 1.9rem;
+  }
+
+  .userdetail-title-row {
+    flex-direction: column;
+  }
+
+  .userdetail-mode-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .userdetail-mode-actions button {
+    flex: 1;
   }
 
   .userdetail-meta-row,

@@ -147,6 +147,50 @@
   color: #b91c1c;
 }
 
+.chat-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.chat-feedback-actions button {
+  border: 1px solid #d4dde9;
+  background: #f7fafc;
+  color: #334155;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chat-feedback-actions button:hover {
+  border-color: #1976d2;
+  color: #1976d2;
+}
+
+.chat-feedback-actions button.report:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.chat-feedback-state {
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chat-feedback-state.helpful {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.chat-feedback-state.reported {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 /* ===============================
    INPUT
 =============================== */

@@ -275,6 +275,57 @@
   cursor: pointer;
 }
 
+.chatassist-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  border-top: 1px solid #edf2f8;
+  padding-top: 12px;
+}
+
+.chatassist-feedback-actions button {
+  min-height: 32px;
+  border: 1px solid #ccd8e8;
+  border-radius: 999px;
+  padding: 0 13px;
+  background: #f6f9fd;
+  color: #385573;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.chatassist-feedback-actions button:hover {
+  border-color: #2f63b8;
+  color: #2f63b8;
+}
+
+.chatassist-feedback-actions button.report:hover {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.chatassist-feedback-state {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 13px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.chatassist-feedback-state.helpful {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.chatassist-feedback-state.reported {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .chatassist-empty-state {
   border-radius: 16px;
   background: #ffffff;

@@ -12,4 +12,11 @@ public class ChatbotLogAdminDTO {
     private String answer;
     private String timestamp;
     private String status;
+    private String sourceType;
+    private String sourceTitle;
+    private String feedbackStatus;
+    private String feedbackReason;
+    private String feedbackAt;
+    private String reviewStatus;
+    private String reviewNote;
 }

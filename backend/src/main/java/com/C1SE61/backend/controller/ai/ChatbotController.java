@@ -1,6 +1,8 @@
 package com.C1SE61.backend.controller.ai;
 
+import com.C1SE61.backend.dto.request.ai.ChatFeedbackRequest;
 import com.C1SE61.backend.dto.request.ai.ChatRequestDTO;
+import com.C1SE61.backend.dto.request.ai.ChatReviewRequest;
 import com.C1SE61.backend.dto.response.ai.ChatHistoryDTO;
 import com.C1SE61.backend.dto.response.ai.ChatResponseDTO;
 import com.C1SE61.backend.dto.response.ai.TopQuestionResponse;
@@ -45,6 +47,13 @@ public class ChatbotController {
         System.out.println("🟢 ChatbotController.ask received request: userId=" 
                 + req.getUserId() + " question=" + req.getQuestion());
         return ResponseEntity.ok(chatbotService.processQuestion(req));
+    }
+
+    @PostMapping("/logs/{chatId}/feedback")
+    public ResponseEntity<ChatResponseDTO> submitFeedback(
+            @PathVariable Integer chatId,
+            @RequestBody ChatFeedbackRequest req) {
+        return ResponseEntity.ok(chatbotService.updateFeedback(chatId, req.getFeedbackStatus(), req.getReason()));
     }
 
     @GetMapping("/top-questions")
@@ -97,6 +106,19 @@ public class ChatbotController {
     @GetMapping("/admin/logs")
     public ResponseEntity<?> getAllChatLogs() {
         return ResponseEntity.ok(chatbotAdminService.getAllLogs());
+    }
+
+    @GetMapping("/admin/reported")
+    public ResponseEntity<?> getReportedChatLogs() {
+        return ResponseEntity.ok(chatbotAdminService.getReportedLogs());
+    }
+
+    @PostMapping("/admin/logs/{chatId}/review")
+    public ResponseEntity<?> reviewChatLog(
+            @PathVariable Integer chatId,
+            @RequestBody ChatReviewRequest req) {
+        chatbotService.updateReview(chatId, req.getReviewStatus(), req.getNote());
+        return ResponseEntity.ok(Map.of("status", "saved"));
     }
 
 

@@ -1,703 +1,427 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import {
+  FiArchive,
+  FiBookOpen,
   FiCheckCircle,
   FiChevronDown,
-  FiClipboard,
-  FiEdit3,
+  FiChevronRight,
+  FiDatabase,
+  FiExternalLink,
+  FiEye,
   FiRefreshCw,
   FiSearch,
+  FiTrash2,
 } from "react-icons/fi";
+import api, { moderatorLawManagementAPI } from "../../api/law";
 import ModeratorWorkspace from "../../components/moderator/ModeratorWorkspace";
-import Laws from "../admin/Laws";
 import "../../styles/moderator/SimplifyPage.css";
 
+const PAGE_SIZE = 12;
+
+const getPageContent = (response) => response?.data?.content || response?.content || [];
+const getTotalPages = (response) => response?.data?.totalPages || response?.totalPages || 1;
+
+const normalizeStatus = (status) => String(status || "").toLowerCase();
+const isActiveLaw = (law) => normalizeStatus(law?.status) === "active";
+
+const formatDate = (value) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString("vi-VN");
+};
+
+const shortText = (value, max = 120) => {
+  if (!value) return "--";
+  const text = String(value).replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}...` : text;
+};
+
+const buildLawPayload = (law, status) => ({
+  title: law.title,
+  code: law.code,
+  lawType: law.lawType,
+  issuedDate: law.issuedDate,
+  effectiveDate: law.effectiveDate,
+  sourceUrl: law.sourceUrl,
+  status,
+  amendedBy: law.amendedBy,
+  versionNumber: law.versionNumber,
+});
+
 export default function SimplifyPage() {
+  const [laws, setLaws] = useState([]);
+  const [selectedLaw, setSelectedLaw] = useState(null);
+  const [chapters, setChapters] = useState([]);
   const [articles, setArticles] = useState([]);
-  const [articleId, setArticleId] = useState("");
-  const [articleTitle, setArticleTitle] = useState("");
-  const [originalText, setOriginalText] = useState("");
-  const [simplifiedText, setSimplifiedText] = useState("");
-  const [message, setMessage] = useState("");
-  const [moderatorId, setModeratorId] = useState(null);
-  const [mySimplified, setMySimplified] = useState([]);
-  const [statusFilter, setStatusFilter] = useState("ALL");
-  const [currentStatus, setCurrentStatus] = useState(null);
-  const [isEditingDraft, setIsEditingDraft] = useState(false);
-  const [activeSection, setActiveSection] = useState("simplify");
+  const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedChapterId, setSelectedChapterId] = useState("all");
+  const [expandedArticleId, setExpandedArticleId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
 
-  const API_ARTICLE = "http://localhost:8080/api/articles";
-  const API_SIMPLIFIED = "http://localhost:8080/api/moderator/simplified";
-  const API_AI = "http://localhost:8080/api/ai/summarize-law";
-
-  const token = localStorage.getItem("token");
-  const authHeader = useMemo(
-    () => ({ Authorization: `Bearer ${token}` }),
-    [token]
-  );
-
-  // Decode JWT
   useEffect(() => {
-    if (!token) return;
+    const timer = window.setTimeout(() => {
+      setPage(0);
+      setDebouncedKeyword(keyword.trim());
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [keyword]);
+
+  const loadLaws = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setModeratorId(Number(payload.userId ?? payload.id ?? payload.sub ?? null));
-    } catch (e) {
-      console.error("[JWT decode error]", e);
+      const response = await moderatorLawManagementAPI.list(debouncedKeyword, page, PAGE_SIZE);
+      const list = getPageContent(response);
+      setLaws(list);
+      setTotalPages(getTotalPages(response));
+      setSelectedLaw((current) => {
+        if (!current) return list[0] || null;
+        return list.find((law) => law.id === current.id) || current;
+      });
+    } catch (err) {
+      setError(err?.message || err?.data?.message || "Không tải được danh sách luật.");
+    } finally {
+      setLoading(false);
     }
-  }, [token]);
+  }, [debouncedKeyword, page]);
 
-  // Load danh sách điều luật
-  useEffect(() => {
-    axios
-      .get(API_ARTICLE)
-      .then((res) => {
-        setArticles(Array.isArray(res.data) ? res.data : []);
-      })
-      .catch((err) => console.error("Load articles failed", err));
+  const loadLawDetail = useCallback(async (law) => {
+    if (!law?.id) {
+      setChapters([]);
+      setArticles([]);
+      return;
+    }
+
+    setDetailLoading(true);
+    setError("");
+    try {
+      const [chapterRes, articleRes] = await Promise.all([
+        api.get("/moderator/chapters", { params: { lawId: law.id, page: 0, size: 300 } }),
+        api.get("/moderator/articles", { params: { lawId: law.id, page: 0, size: 1000 } }),
+      ]);
+
+      setChapters(chapterRes.data?.data?.content || []);
+      setArticles(articleRes.data?.data?.content || []);
+      setSelectedChapterId("all");
+      setExpandedArticleId(null);
+    } catch (err) {
+      setError(err?.response?.data?.message || "Không tải được chương và điều luật.");
+    } finally {
+      setDetailLoading(false);
+    }
   }, []);
 
-  // Load danh sách bài của Moderator
-  const refreshMine = useCallback(async () => {
-    if (!moderatorId) return;
-
-    const res = await axios.get(`${API_SIMPLIFIED}/mine/${moderatorId}`, {
-      headers: authHeader,
-      validateStatus: () => true,
-    });
-    setMySimplified(Array.isArray(res.data) ? res.data : []);
-  }, [API_SIMPLIFIED, authHeader, moderatorId]);
+  useEffect(() => {
+    loadLaws();
+  }, [loadLaws]);
 
   useEffect(() => {
-    refreshMine();
-  }, [refreshMine]);
+    loadLawDetail(selectedLaw);
+  }, [selectedLaw, loadLawDetail]);
 
-  // Hàm gọi AI
-  const generateAI = useCallback(async () => {
-    if (!originalText || !originalText.trim()) return;
-    if (!articleTitle) return;
+  const lawStats = useMemo(() => {
+    const active = laws.filter(isActiveLaw).length;
+    return {
+      total: laws.length,
+      active,
+      hidden: Math.max(laws.length - active, 0),
+    };
+  }, [laws]);
 
-    setMessage("🤖 AI đang tạo bản rút gọn gợi ý...");
+  const articlesByChapter = useMemo(() => {
+    return articles.reduce((map, article) => {
+      const key = article.chapterId || "none";
+      if (!map[key]) map[key] = [];
+      map[key].push(article);
+      return map;
+    }, {});
+  }, [articles]);
 
+  const visibleArticles = useMemo(() => {
+    if (selectedChapterId === "all") return articles;
+    return articlesByChapter[selectedChapterId] || [];
+  }, [articles, articlesByChapter, selectedChapterId]);
+
+  const handleSelectLaw = (law) => {
+    setSelectedLaw(law);
+    setNotice("");
+  };
+
+  const updateLawStatus = async (law, status) => {
+    setActionLoadingId(law.id);
+    setNotice("");
+    setError("");
     try {
-      const res = await axios.post(
-        API_AI,
-        {
-          lawContent: originalText,
-          articleTitle,
-          articleId,
-        },
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      setSimplifiedText(res.data.summary || "");
-      setMessage("✨ AI đã tạo bản rút gọn — bạn có thể chỉnh sửa!");
+      const response = await moderatorLawManagementAPI.update(law.id, buildLawPayload(law, status));
+      const updated = response?.data || response;
+      setLaws((current) => current.map((item) => (item.id === law.id ? { ...item, ...updated, status } : item)));
+      setSelectedLaw((current) => (current?.id === law.id ? { ...current, ...updated, status } : current));
+      setNotice(status === "active" ? "Đã giữ bộ luật này cho user sử dụng." : "Đã ẩn bộ luật này khỏi kết quả người dùng.");
     } catch (err) {
-      console.error(err);
-      const backendMessage =
-        err?.response?.data?.message ||
-        (typeof err?.response?.data === "string" ? err.response.data : "");
-      setMessage(`⚠️ AI không thể sinh bản rút gọn.${backendMessage ? ` ${backendMessage}` : ""}`);
+      setError(err?.message || "Không cập nhật được trạng thái bộ luật.");
+    } finally {
+      setActionLoadingId(null);
     }
-  }, [API_AI, articleId, articleTitle, originalText]);
+  };
 
-  // Khi chọn điều luật
-  useEffect(() => {
-      if (!articleId || !moderatorId) return;
+  const deleteLaw = async (law) => {
+    const ok = window.confirm(`Xóa vĩnh viễn "${law.title}" khỏi database? Thao tác này có thể ảnh hưởng dữ liệu chương/điều đã crawl.`);
+    if (!ok) return;
 
-      let active = true;
-
-      const loadContent = async () => {
-        setMessage("Đang tải dữ liệu...");
-        setSimplifiedText("");
-        setCurrentStatus(null);
-
-        try {
-          // 1. Bản gốc
-          const resOriginal = await axios.get(`${API_ARTICLE}/${articleId}`);
-          if (!active) return;
-
-          const art = resOriginal.data || {};
-          setArticleTitle(art.articleTitle || "");
-          setOriginalText(art.content || "");
-
-          // 2. Bản của Moderator
-          const resMine = await axios.get(
-            `${API_SIMPLIFIED}/mine/${moderatorId}`,
-            { headers: authHeader }
-          );
-          if (!active) return;
-
-          const mine = resMine.data || [];
-          const match = mine.find(m => Number(m.articleId) === Number(articleId));
-
-          if (match) {
-            setSimplifiedText(match.contentSimplified);
-            setCurrentStatus(match.status);
-            setMessage(`📄 Bản của bạn (${match.status})`);
-            return;
-          }
-
-          // 3. Bản đã duyệt chung
-          const resApproved = await axios.get(
-            `${API_SIMPLIFIED}/by-article/${articleId}`,
-            { headers: authHeader, validateStatus: () => true }
-          );
-          if (!active) return;
-
-          if (resApproved.status === 200) {
-            const simplified = resApproved.data;
-            setSimplifiedText(simplified.contentSimplified);
-            setCurrentStatus(simplified.status);
-            setMessage(`📄 Bản đã duyệt (${simplified.status})`);
-            return;
-          }
-
-          // 4. NEW
-          setSimplifiedText("");
-          setCurrentStatus("NEW");
-          setMessage("🆕 Không có bản rút gọn — AI sẽ tạo gợi ý...");
-
-        } catch (err) {
-          if (active) setMessage("⚠️ Lỗi tải dữ liệu.");
-        }
-      };
-
-      loadContent();
-
-      return () => {
-        active = false;
-      };
-  }, [articleId, authHeader, moderatorId]);
-
-
-  // Gọi AI đúng thời điểm (sau khi dữ liệu đã load xong)
-  useEffect(() => {
-    if (
-      articleId &&
-      currentStatus === "NEW" &&
-      originalText.trim() !== "" &&
-      articleTitle.trim() !== ""
-    ) {
-      console.log("🔥 CALLING AI FOR:", articleId, articleTitle);
-      generateAI();
-    }
-  }, [articleId, articleTitle, currentStatus, generateAI, originalText]);
-
-
-
-  // Submit
-  const handleSubmit = async () => {
-    if (!articleId || !simplifiedText.trim()) {
-      return setMessage("⚠️ Vui lòng chọn điều luật và nhập nội dung!");
-    }
-
+    setActionLoadingId(law.id);
+    setNotice("");
+    setError("");
     try {
-      const payload = {
-        articleId: Number(articleId),
-        moderatorId: Number(moderatorId),
-        category: articleTitle,
-        contentSimplified: simplifiedText,
-      };
-
-      const res = await axios.post(`${API_SIMPLIFIED}/create`, payload, {
-        headers: authHeader,
-      });
-
-      if (res.status === 200) {
-        setMessage("✅ Đã lưu và duyệt ngay.");
-        refreshMine();
-        setCurrentStatus("APPROVED");
+      await moderatorLawManagementAPI.remove(law.id);
+      setLaws((current) => current.filter((item) => item.id !== law.id));
+      if (selectedLaw?.id === law.id) {
+        setSelectedLaw(null);
+        setChapters([]);
+        setArticles([]);
       }
+      setNotice("Đã xóa bộ luật khỏi database.");
     } catch (err) {
-      setMessage("❌ Lỗi gửi bài");
+      setError(err?.message || "Không xóa được. Nếu bộ luật đang có dữ liệu liên quan, hãy dùng Ẩn khỏi user.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
-  const handleReset = () => {
-    setSimplifiedText("");
-    setMessage("🔄 Đã làm mới.");
-    setCurrentStatus("NEW");
-  };
-
-  const statusMap = {
-    PENDING: "⏳ Chờ duyệt",
-    APPROVED: "✅ Đã duyệt",
-    REJECTED: "❌ Bị từ chối",
-    ARCHIVED: "🗑️ Đã ẩn khỏi user",
-    NEW: "🆕 Chưa có",
-  };
-
-  const articleStatusMap = {};
-  mySimplified.forEach((s) => {
-    articleStatusMap[s.articleId] = s.status;
-  });
-
-  const filteredArticles = articles;
-
-  const filteredList = mySimplified.filter((s) =>
-    statusFilter === "ALL" ? true : s.status === statusFilter
-  );
-
-  const currentMineItem = useMemo(
-    () =>
-      mySimplified.find(
-        (item) => Number(item.articleId) === Number(articleId)
-      ) || null,
-    [articleId, mySimplified]
-  );
-
-  const originalParagraphs = useMemo(
-    () =>
-      originalText
-        .split(/\n+/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [originalText]
-  );
-
-  const simplifiedParagraphs = useMemo(() => {
-    const lineItems = simplifiedText
-      .split(/\n+/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    if (lineItems.length > 1) return lineItems;
-
-    return (simplifiedText.match(/[^.!?]+[.!?]?/g) || [])
-      .map((item) => item.trim())
-      .filter(Boolean);
-  }, [simplifiedText]);
-
-  const pendingReviewCount = useMemo(
-    () => mySimplified.filter((item) => item.status === "PENDING").length,
-    [mySimplified]
-  );
-
-  const bulkApproveCount = useMemo(
-    () => mySimplified.filter((item) => item.status !== "APPROVED").length,
-    [mySimplified]
-  );
-
-  const bulkHideCount = useMemo(
-    () => mySimplified.filter((item) => item.status !== "ARCHIVED").length,
-    [mySimplified]
-  );
-
-  const queueLabel = useMemo(() => {
-    if (currentStatus === "PENDING") {
-      return `Đang chờ ${pendingReviewCount || 1} mục thẩm định`;
-    }
-
-    if (currentStatus === "APPROVED") {
-      return "Nội dung đã được phê duyệt";
-    }
-
-    if (currentStatus === "REJECTED") {
-      return "Bản rút gọn cần chỉnh sửa và gửi lại";
-    }
-
-    if (currentStatus === "ARCHIVED") {
-      return "Bản đã ẩn khỏi user, vẫn có thể chỉnh sửa";
-    }
-
-    return "Sẵn sàng gửi duyệt";
-  }, [currentStatus, pendingReviewCount]);
-
-  const handleCopySimplified = async () => {
-    if (!simplifiedText.trim()) return;
-
-    try {
-      await navigator.clipboard.writeText(simplifiedText);
-      setMessage("📋 Đã sao chép bản rút gọn.");
-    } catch {
-      setMessage("⚠️ Không thể sao chép nội dung.");
-    }
-  };
-
-  const handleRegenerate = () => {
-    generateAI();
-    setIsEditingDraft(false);
-  };
-
-  const handleApproveOne = async (item = currentMineItem) => {
-    if (!moderatorId) {
-      setMessage("⚠️ Không xác định được tài khoản moderator.");
-      return;
-    }
-
-    if (!item?.id) {
-      setMessage("⚠️ Chưa có bản rút gọn để duyệt.");
-      return;
-    }
-
-    try {
-      await axios.put(`${API_SIMPLIFIED}/${item.id}/approve`, null, {
-        headers: authHeader,
-        params: { moderatorId },
-      });
-
-      await refreshMine();
-      if (Number(item.articleId) === Number(articleId)) {
-        setCurrentStatus("APPROVED");
-      }
-      setMessage("✅ Đã duyệt bản rút gọn này.");
-    } catch {
-      setMessage("❌ Không thể duyệt bản rút gọn.");
-    }
-  };
-
-  const handleApproveAll = async () => {
-    if (!moderatorId) {
-      setMessage("⚠️ Không xác định được tài khoản moderator.");
-      return;
-    }
-
-    if (bulkApproveCount === 0) {
-      setMessage("ℹ️ Không có bản rút gọn nào cần duyệt hàng loạt.");
-      return;
-    }
-
-    try {
-      const res = await axios.put(
-        `${API_SIMPLIFIED}/approve-all/${moderatorId}`,
-        null,
-        { headers: authHeader }
-      );
-      await refreshMine();
-      const updatedCount = Number(res.data?.updated || 0);
-      setCurrentStatus((prev) => (prev && prev !== "NEW" ? "APPROVED" : prev));
-      setMessage(`✅ Đã duyệt hàng loạt ${updatedCount} bản rút gọn AI.`);
-    } catch {
-      setMessage("❌ Không thể duyệt tất cả bản rút gọn.");
-    }
-  };
-
-  const handleHideFromUser = async (item = currentMineItem) => {
-    if (!moderatorId) {
-      setMessage("⚠️ Không xác định được tài khoản moderator.");
-      return;
-    }
-
-    if (!item?.id) {
-      setMessage("⚠️ Chưa có bản rút gọn để ẩn.");
-      return;
-    }
-
-    try {
-      await axios.put(`${API_SIMPLIFIED}/${item.id}/hide-from-user`, null, {
-        headers: authHeader,
-        params: { moderatorId },
-      });
-
-      await refreshMine();
-      if (Number(item.articleId) === Number(articleId)) {
-        setCurrentStatus("ARCHIVED");
-      }
-      setMessage("🗑️ Đã ẩn bản rút gọn khỏi user, moderator vẫn có thể chỉnh sửa.");
-    } catch {
-      setMessage("❌ Không thể ẩn bản rút gọn khỏi user.");
-    }
-  };
-
-  const handleHideAllFromUser = async () => {
-    if (!moderatorId) {
-      setMessage("⚠️ Không xác định được tài khoản moderator.");
-      return;
-    }
-
-    if (bulkHideCount === 0) {
-      setMessage("ℹ️ Tất cả bản rút gọn đã được ẩn khỏi user.");
-      return;
-    }
-
-    try {
-      const res = await axios.put(
-        `${API_SIMPLIFIED}/hide-all/${moderatorId}`,
-        null,
-        { headers: authHeader }
-      );
-      await refreshMine();
-      setCurrentStatus((prev) => (prev && prev !== "NEW" ? "ARCHIVED" : prev));
-      const updatedCount = Number(res.data?.updated || 0);
-      setMessage(`🗑️ Đã ẩn hàng loạt ${updatedCount} bản rút gọn khỏi user.`);
-    } catch {
-      setMessage("❌ Không thể ẩn tất cả bản rút gọn.");
-    }
+  const renderLawActions = (law) => {
+    const busy = actionLoadingId === law.id;
+    return (
+      <div className="law-card-actions">
+        {isActiveLaw(law) ? (
+          <button className="law-action-button muted" disabled={busy} onClick={(event) => {
+            event.stopPropagation();
+            updateLawStatus(law, "archived");
+          }}>
+            <FiArchive /> Ẩn khỏi user
+          </button>
+        ) : (
+          <button className="law-action-button keep" disabled={busy} onClick={(event) => {
+            event.stopPropagation();
+            updateLawStatus(law, "active");
+          }}>
+            <FiCheckCircle /> Giữ lại
+          </button>
+        )}
+        <button className="law-action-button danger" disabled={busy} onClick={(event) => {
+          event.stopPropagation();
+          deleteLaw(law);
+        }}>
+          <FiTrash2 /> Xóa DB
+        </button>
+      </div>
+    );
   };
 
   return (
     <ModeratorWorkspace
       active="simplify"
-      title="Rút gọn luật"
-      description="Hỗ trợ soạn thảo và xem xét các bản tóm lược văn bản pháp luật bằng trí tuệ nhân tạo. Đảm bảo tính pháp lý và sự dễ hiểu cho người lao động."
+      title="Quản lý luật"
+      description="Theo dõi toàn bộ bộ luật đã crawl về database, quyết định bộ luật nào được giữ cho user sử dụng và xem nhanh chương, điều, nội dung văn bản."
+      actions={
+        <button className="law-refresh-button" onClick={loadLaws} disabled={loading}>
+          <FiRefreshCw /> Làm mới
+        </button>
+      }
     >
-      <section className="simplify-mode-switch" aria-label="Chế độ làm việc">
-        <button
-          type="button"
-          className={`simplify-mode-btn${activeSection === "simplify" ? " active" : ""}`}
-          onClick={() => setActiveSection("simplify")}
-        >
-          Rút gọn luật
-        </button>
-        <button
-          type="button"
-          className={`simplify-mode-btn${activeSection === "manage" ? " active" : ""}`}
-          onClick={() => setActiveSection("manage")}
-        >
-          Quản lý luật
-        </button>
-      </section>
-
-      {activeSection === "simplify" ? (
-        <>
-      <section className="simplify-composer-shell">
-        <div className="simplify-page">
-          <div className="simplify-bulk-actions" aria-label="Thao tác hàng loạt">
-            <button
-              type="button"
-              className="btn approve"
-              onClick={handleApproveAll}
-              disabled={bulkApproveCount === 0}
-            >
-              Duyệt tất cả ({bulkApproveCount})
-            </button>
-            <button
-              type="button"
-              className="btn danger"
-              onClick={handleHideAllFromUser}
-              disabled={bulkHideCount === 0}
-            >
-              Ẩn tất cả ({bulkHideCount})
-            </button>
-          </div>
-
-          <div className="simplify-selector-card">
-            <div className="simplify-selector-label">Lựa chọn văn bản pháp luật</div>
-
-            <div className="simplify-selector-field">
-              <FiSearch aria-hidden="true" />
-              <select
-                value={articleId}
-                onChange={(e) =>
-                  setArticleId(e.target.value ? Number(e.target.value) : "")
-                }
-              >
-                <option value="">-- Chọn điều luật --</option>
-                {filteredArticles.map((a) => (
-                  <option key={a.articleId} value={a.articleId}>
-                    {a.articleTitle?.trim()}
-                  </option>
-                ))}
-              </select>
-              <FiChevronDown aria-hidden="true" />
-            </div>
-          </div>
-
-          <div className="content-columns composer">
-            <article className="column original compose-card">
-              <div className="compose-card-header">
-                <h4>📄 Bản gốc</h4>
-              </div>
-
-              <div className="law-box enhanced">
-                <div className="law-box-title">
-                  {articleTitle || "Chưa chọn văn bản pháp luật"}
-                </div>
-
-                {originalParagraphs.length > 0 ? (
-                  <div className="law-box-content">
-                    {originalParagraphs.map((paragraph, index) => (
-                      <p key={`${index}-${paragraph.slice(0, 20)}`}>
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="law-box-empty">Chọn điều luật để xem nội dung gốc.</p>
-                )}
-
-                <div className="law-box-footer">Bộ luật lao động 2019</div>
-              </div>
-            </article>
-
-            <article className="column simplified compose-card">
-              <div className="compose-card-header with-tools">
-                <h4>✦ Bản rút gọn (AI)</h4>
-
-                <div className="compose-toolbar">
-                  <button type="button" onClick={() => setIsEditingDraft((value) => !value)} title="Chỉnh sửa">
-                    <FiEdit3 />
-                  </button>
-                  <button type="button" onClick={handleCopySimplified} title="Sao chép">
-                    <FiClipboard />
-                  </button>
-                  <button type="button" onClick={handleRegenerate} title="Tạo lại bằng AI">
-                    <FiRefreshCw />
-                  </button>
-                </div>
-              </div>
-
-              <div className="simplify-ai-panel">
-                <div className="simplify-ai-note">
-                  <FiCheckCircle aria-hidden="true" />
-                  <span>
-                    Nội dung này đã được tối ưu hóa cho công nhân viên chức. Bạn có thể chỉnh sửa trực tiếp nếu cần dưới đây.
-                  </span>
-                </div>
-
-                {isEditingDraft ? (
-                  <div className="simplify-edit-area">
-                    <textarea
-                      className="simplify-input moderator-mode"
-                      disabled={currentStatus === "PENDING"}
-                      value={simplifiedText}
-                      onChange={(e) => setSimplifiedText(e.target.value)}
-                      placeholder="Nhập bản rút gọn..."
-                    />
-                  </div>
-                ) : simplifiedParagraphs.length > 0 ? (
-                  <ol className="simplify-ai-list">
-                    {simplifiedParagraphs.map((paragraph, index) => (
-                      <li key={`${index}-${paragraph.slice(0, 20)}`}>
-                        <span className="simplify-ai-index">{String(index + 1).padStart(2, "0")}</span>
-                        <p>{paragraph}</p>
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <div className="simplify-ai-empty">
-                    Chưa có bản rút gọn. Hãy chọn điều luật để AI tạo nội dung gợi ý.
-                  </div>
-                )}
-              </div>
-            </article>
-          </div>
-
-          <div className="simplify-action-bar">
-            <div className="simplify-review-status">
-              <div className="simplify-review-avatars" aria-hidden="true">
-                <span>A</span>
-                <span>R</span>
-              </div>
-              <span>{queueLabel}</span>
-            </div>
-
-            <div className="action-buttons docked">
-              <button
-                className="btn danger"
-                onClick={() => handleHideFromUser()}
-                disabled={!currentMineItem?.id}
-              >
-                Ẩn khỏi user
-              </button>
-              <button className="btn reset ghost" onClick={handleReset}>
-                <FiRefreshCw />
-                Làm mới
-              </button>
-              <button className="btn submit" onClick={handleSubmit}>
-                Lưu và duyệt ngay
-              </button>
-            </div>
-          </div>
-
-          {message ? <p className="status-message inline">{message}</p> : null}
+      <section className="law-management-shell">
+        <div className="law-management-stats">
+          <article>
+            <span className="stat-icon database"><FiDatabase /></span>
+            <p>Tổng bộ luật</p>
+            <strong>{lawStats.total}</strong>
+          </article>
+          <article>
+            <span className="stat-icon active"><FiEye /></span>
+            <p>Đang cho user dùng</p>
+            <strong>{lawStats.active}</strong>
+          </article>
+          <article>
+            <span className="stat-icon hidden"><FiArchive /></span>
+            <p>Đã ẩn / chưa dùng</p>
+            <strong>{lawStats.hidden}</strong>
+          </article>
         </div>
-      </section>
 
-      <section className="moderator-workspace-panel simplify-history-panel">
-        <div className="simplify-history-head">
-          <div>
-            <h3>Lịch sử gửi duyệt</h3>
-            <p>Theo dõi các bản rút gọn bạn đã gửi và quay lại chỉnh sửa khi cần.</p>
-          </div>
-
-          <div className="filter-row compact">
-            <label>Lọc theo trạng thái</label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="ALL">Tất cả</option>
-              <option value="PENDING">Chờ duyệt</option>
-              <option value="APPROVED">Đã duyệt</option>
-              <option value="REJECTED">Bị từ chối</option>
-              <option value="ARCHIVED">Đã ẩn khỏi user</option>
-            </select>
+        <div className="law-management-toolbar">
+          <label className="law-search-box">
+            <FiSearch />
+            <input
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              placeholder="Tìm theo tên, mã luật hoặc loại văn bản..."
+            />
+          </label>
+          <div className="law-page-controls">
+            <button disabled={page <= 0 || loading} onClick={() => setPage((value) => Math.max(value - 1, 0))}>
+              Trước
+            </button>
+            <span>{page + 1}/{Math.max(totalPages, 1)}</span>
+            <button disabled={page + 1 >= totalPages || loading} onClick={() => setPage((value) => value + 1)}>
+              Sau
+            </button>
           </div>
         </div>
 
-        <table className="simplified-table">
-          <thead>
-            <tr>
-              <th>Điều luật</th>
-              <th>Trạng thái</th>
-              <th>Ngày gửi</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredList.length === 0 ? (
-              <tr>
-                <td colSpan="4">Không có bài nào.</td>
-              </tr>
-            ) : (
-              filteredList.map((s) => (
-                <tr key={s.id}>
-                  <td>{s.articleTitle}</td>
-                  <td>{statusMap[s.status] || s.status}</td>
-                  <td>
-                    {s.createdAt
-                      ? new Date(s.createdAt).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td>
-                    <div className="action-buttons history-actions">
-                      {(s.status === "PENDING" || s.status === "REJECTED") && (
-                        <button
-                          className="btn approve"
-                          onClick={() => handleApproveOne(s)}
-                        >
-                          Duyệt
-                        </button>
-                      )}
+        {notice ? <div className="law-notice success">{notice}</div> : null}
+        {error ? <div className="law-notice error">{error}</div> : null}
 
-                      {s.status === "APPROVED" && (
-                        <button
-                          className="btn danger"
-                          onClick={() => handleHideFromUser(s)}
-                        >
-                          Ẩn khỏi user
-                        </button>
-                      )}
+        <div className="law-management-layout">
+          <section className="law-list-panel" aria-label="Danh sách bộ luật">
+            <div className="panel-title-row">
+              <div>
+                <h2>Bộ luật đã crawl</h2>
+                <p>Chọn một bộ luật để xem chương và điều bên phải.</p>
+              </div>
+              <span>{loading ? "Đang tải" : `${laws.length} mục`}</span>
+            </div>
 
-                      {(s.status === "APPROVED" || s.status === "REJECTED" || s.status === "ARCHIVED") && (
-                        <button
-                          className="btn edit-btn"
-                          onClick={() => {
-                            setArticleId(s.articleId);
-                            setIsEditingDraft(true);
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          }}
-                        >
-                          ✏️ Chỉnh sửa
-                        </button>
-                      )}
+            <div className="law-list">
+              {!loading && laws.length === 0 ? (
+                <div className="law-empty-state">Chưa có bộ luật phù hợp với bộ lọc hiện tại.</div>
+              ) : null}
+
+              {loading ? (
+                <div className="law-empty-state">Đang tải dữ liệu luật...</div>
+              ) : (
+                laws.map((law) => (
+                  <article
+                    key={law.id}
+                    className={`law-card ${selectedLaw?.id === law.id ? "selected" : ""}`}
+                    onClick={() => handleSelectLaw(law)}
+                  >
+                    <div className="law-card-main">
+                      <span className={`law-status ${isActiveLaw(law) ? "active" : "archived"}`}>
+                        {isActiveLaw(law) ? "Đang dùng" : "Đang ẩn"}
+                      </span>
+                      <h3>{law.title || "Chưa có tên văn bản"}</h3>
+                      <p>{law.code || law.lawType || "Chưa có mã luật"}</p>
                     </div>
-                  </td>
-                </tr>
-              ))
+                    <div className="law-card-meta">
+                      <span>Hiệu lực: {formatDate(law.effectiveDate)}</span>
+                      <span>Crawl: {formatDate(law.lastCrawledAt)}</span>
+                    </div>
+                    {renderLawActions(law)}
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+
+          <section className="law-detail-panel" aria-label="Chi tiết bộ luật">
+            {!selectedLaw ? (
+              <div className="law-detail-empty">
+                <FiBookOpen />
+                <h2>Chưa chọn bộ luật</h2>
+                <p>Chọn một bộ luật đã crawl để xem chương, điều và nội dung văn bản.</p>
+              </div>
+            ) : (
+              <>
+                <div className="law-detail-header">
+                  <div>
+                    <span className={`law-status ${isActiveLaw(selectedLaw) ? "active" : "archived"}`}>
+                      {isActiveLaw(selectedLaw) ? "User có thể tìm/chat theo bộ luật này" : "Đang ẩn khỏi user"}
+                    </span>
+                    <h2>{selectedLaw.title}</h2>
+                    <p>{selectedLaw.code || selectedLaw.lawType || "Văn bản pháp luật"}</p>
+                  </div>
+                  {selectedLaw.sourceUrl ? (
+                    <a className="source-link" href={selectedLaw.sourceUrl} target="_blank" rel="noreferrer">
+                      <FiExternalLink /> Nguồn
+                    </a>
+                  ) : null}
+                </div>
+
+                <div className="law-meta-grid">
+                  <div><span>Loại</span><strong>{selectedLaw.lawType || "--"}</strong></div>
+                  <div><span>Ngày ban hành</span><strong>{formatDate(selectedLaw.issuedDate)}</strong></div>
+                  <div><span>Ngày hiệu lực</span><strong>{formatDate(selectedLaw.effectiveDate)}</strong></div>
+                  <div><span>Phiên bản</span><strong>{selectedLaw.versionNumber || "--"}</strong></div>
+                </div>
+
+                <div className="law-detail-actions">
+                  {isActiveLaw(selectedLaw) ? (
+                    <button className="law-action-button muted" disabled={actionLoadingId === selectedLaw.id} onClick={() => updateLawStatus(selectedLaw, "archived")}>
+                      <FiArchive /> Ẩn khỏi user
+                    </button>
+                  ) : (
+                    <button className="law-action-button keep" disabled={actionLoadingId === selectedLaw.id} onClick={() => updateLawStatus(selectedLaw, "active")}>
+                      <FiCheckCircle /> Giữ lại cho user
+                    </button>
+                  )}
+                  <button className="law-action-button danger" disabled={actionLoadingId === selectedLaw.id} onClick={() => deleteLaw(selectedLaw)}>
+                    <FiTrash2 /> Xóa khỏi DB
+                  </button>
+                </div>
+
+                <div className="law-content-head">
+                  <div>
+                    <h3>Chương và điều luật</h3>
+                    <p>{chapters.length} chương, {articles.length} điều trong database.</p>
+                  </div>
+                  {detailLoading ? <span>Đang tải nội dung...</span> : null}
+                </div>
+
+                <div className="chapter-filter-row">
+                  <button
+                    className={selectedChapterId === "all" ? "active" : ""}
+                    onClick={() => setSelectedChapterId("all")}
+                  >
+                    Tất cả ({articles.length})
+                  </button>
+                  {chapters.map((chapter) => {
+                    const count = (articlesByChapter[chapter.chapterId] || []).length;
+                    return (
+                      <button
+                        key={chapter.chapterId}
+                        className={selectedChapterId === chapter.chapterId ? "active" : ""}
+                        onClick={() => setSelectedChapterId(chapter.chapterId)}
+                        title={chapter.chapterTitle}
+                      >
+                        {chapter.chapterNumber || "Chương"} ({count})
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="article-list">
+                  {!detailLoading && visibleArticles.length === 0 ? (
+                    <div className="law-empty-state">Chưa có điều luật trong phần này.</div>
+                  ) : null}
+
+                  {visibleArticles.map((article) => {
+                    const expanded = expandedArticleId === article.articleId;
+                    return (
+                      <article className="article-item" key={article.articleId}>
+                        <button className="article-title" onClick={() => setExpandedArticleId(expanded ? null : article.articleId)}>
+                          {expanded ? <FiChevronDown /> : <FiChevronRight />}
+                          <span>
+                            <strong>{article.articleNumber || "Điều"}</strong>
+                            {article.articleTitle ? ` - ${article.articleTitle}` : ""}
+                          </span>
+                        </button>
+                        <p className="article-preview">{shortText(article.content, 180)}</p>
+                        {expanded ? <div className="article-content">{article.content || "Chưa có nội dung điều luật."}</div> : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
             )}
-          </tbody>
-        </table>
+          </section>
+        </div>
       </section>
-        </>
-      ) : (
-        <section className="moderator-workspace-panel simplify-management-panel">
-          <Laws hideSimplifiedManagement />
-        </section>
-      )}
     </ModeratorWorkspace>
   );
 }
-

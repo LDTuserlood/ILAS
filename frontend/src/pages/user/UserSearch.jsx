@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import UserSidebar from "../../components/user/UserSidebar";
 import { useAuth } from "../../contexts/AuthContext";
 import { lawAPI } from "../../api/law";
@@ -8,8 +8,10 @@ import "../../styles/user/UserSearch.css";
 
 const UserSearch = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
+  const searchBasePath = location.pathname.startsWith("/user") ? "/user/search" : "/search";
 
   const [searchKeyword, setSearchKeyword] = useState(() => searchParams.get("q") || "");
   const [activeFilter, setActiveFilter] = useState("all");
@@ -24,12 +26,15 @@ const UserSearch = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState("");
-  const [searchType] = useState("all");
+  const [resultMode, setResultMode] = useState("initialLaws");
+
+  const getLawId = (law) => law?.id ?? law?.lawId;
+  const getArticleId = (article) => article?.articleId ?? article?.id;
 
   const saveSearchToHistory = (keyword) => {
     if (!keyword.trim()) return;
     const recent = JSON.parse(localStorage.getItem("recentSearches") || "[]");
-    const updated = [keyword, ...recent.filter((i) => i !== keyword)].slice(0, 10);
+    const updated = [keyword, ...recent.filter((item) => item !== keyword)].slice(0, 10);
     localStorage.setItem("recentSearches", JSON.stringify(updated));
   };
 
@@ -42,47 +47,54 @@ const UserSearch = () => {
 
     try {
       if (page === 0) {
-        trackAPI.searchLog(searchTerm, searchType || "all");
+        trackAPI.searchLog(searchTerm, activeFilter || "all").catch((logError) => {
+          console.warn("Search log failed:", logError);
+        });
       }
 
       let response;
-      if (searchType === "laws") {
+      if (activeFilter === "laws") {
         response = await lawAPI.searchLaws(searchTerm, page, 10);
         if (response.success) {
           setSearchResults({
-            laws: response.data.content,
+            laws: response.data.content || [],
             articles: [],
-            totalLaws: response.data.totalElements,
+            totalLaws: response.data.totalElements || 0,
             totalArticles: 0,
-            totalResults: response.data.totalElements,
+            totalResults: response.data.totalElements || 0,
           });
-          setTotalPages(response.data.totalPages);
+          setTotalPages(response.data.totalPages || 0);
         }
-      } else if (searchType === "articles") {
+      } else if (activeFilter === "articles") {
         response = await lawAPI.searchArticles(searchTerm, page, 10);
         if (response.success) {
           setSearchResults({
             laws: [],
-            articles: response.data.content,
+            articles: response.data.content || [],
             totalLaws: 0,
-            totalArticles: response.data.totalElements,
-            totalResults: response.data.totalElements,
+            totalArticles: response.data.totalElements || 0,
+            totalResults: response.data.totalElements || 0,
           });
-          setTotalPages(response.data.totalPages);
+          setTotalPages(response.data.totalPages || 0);
         }
       } else {
         response = await lawAPI.searchAll(searchTerm, page, 10);
         if (response.success) {
-          setSearchResults(response.data);
-          setTotalPages(response.data.totalPages);
+          setSearchResults({
+            laws: response.data.laws || [],
+            articles: response.data.articles || [],
+            totalLaws: response.data.totalLaws || 0,
+            totalArticles: response.data.totalArticles || 0,
+            totalResults: response.data.totalResults || 0,
+          });
+          setTotalPages(response.data.totalPages || 0);
         }
       }
 
       if (response?.success) {
         const total = (response.data?.totalResults ?? 0) || (response.data?.totalElements ?? 0) || 0;
-        if (total === 0) {
-          setError(`Không tìm thấy kết quả cho "${searchTerm}"`);
-        }
+        setResultMode("search");
+        if (total === 0) setError(`Không tìm thấy kết quả cho "${searchTerm}"`);
         setCurrentPage(page);
         if (page === 0) saveSearchToHistory(searchTerm);
       } else {
@@ -96,43 +108,40 @@ const UserSearch = () => {
     }
   };
 
-  const handleViewAllArticles = async () => {
+  const loadInitialLaws = async (page = 0) => {
     setLoading(true);
     setError("");
     try {
-      const articlesRes = await lawAPI.getAllArticles(0, 10);
-      if (articlesRes?.success) {
-        const articlesPage = articlesRes.data || {};
-        const articles = articlesPage.content || [];
-        const totalArticles = articlesPage.totalElements || 0;
-
+      const response = await lawAPI.getAllLaws(page, 6);
+      if (response?.success) {
         setSearchResults({
-          laws: [],
-          articles,
-          totalLaws: 0,
-          totalArticles,
-          totalResults: totalArticles,
+          laws: response.data.content || [],
+          articles: [],
+          totalLaws: response.data.totalElements || 0,
+          totalArticles: 0,
+          totalResults: response.data.totalElements || 0,
         });
-
-        setTotalPages(articlesPage.totalPages || 0);
-        setCurrentPage(0);
-        setSearchKeyword("");
-        setActiveFilter("articles");
-      } else {
-        setError(articlesRes?.message || "Không tải được danh sách điều luật");
+        setTotalPages(response.data.totalPages || 0);
+        setCurrentPage(page);
+        setResultMode("initialLaws");
       }
     } catch (requestError) {
-      console.error("Load all articles error:", requestError);
-      setError("Không thể kết nối đến server. Vui lòng thử lại sau.");
+      console.error("Load initial laws error:", requestError);
+      setError("Không thể tải dữ liệu pháp luật.");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleViewAllLaws = () => {
+    setActiveFilter("all");
+    setSearchKeyword("");
+    loadInitialLaws(0);
+    navigate(searchBasePath, { replace: true });
+  };
+
   const handleSearch = (keyword = null) => {
-    if (keyword && typeof keyword === "object" && "preventDefault" in keyword) {
-      keyword = null;
-    }
+    if (keyword && typeof keyword === "object" && "preventDefault" in keyword) keyword = null;
     const term = (typeof keyword === "string" ? keyword : searchKeyword).trim();
     if (!term) {
       setError("Vui lòng nhập từ khóa");
@@ -140,92 +149,69 @@ const UserSearch = () => {
     }
 
     performSearch(term, 0);
-    navigate(`/user/search?q=${encodeURIComponent(term)}`, { replace: true });
+    navigate(`${searchBasePath}?q=${encodeURIComponent(term)}`, { replace: true });
   };
 
   const handlePageChange = (page) => {
+    if (page < 0 || page >= totalPages) return;
+    if (resultMode === "initialLaws") {
+      loadInitialLaws(page);
+      return;
+    }
     if (searchKeyword.trim()) performSearch(searchKeyword.trim(), page);
   };
 
   const handleViewDetail = (item) => {
-    const realId = item.type === "law" ? item.data.lawId : item.data.articleId;
-    navigate(`/user/search/detail?id=${realId}&type=${item.type}`);
+    const realId = item.type === "law" ? getLawId(item.data) : getArticleId(item.data);
+    if (!realId) {
+      setError("Không mở được chi tiết vì dữ liệu thiếu ID.");
+      return;
+    }
+    navigate(`${searchBasePath}/detail?id=${realId}&type=${item.type}&mode=detail`);
+  };
+
+  const handleViewSummary = (item) => {
+    const lawId = item.type === "law" ? getLawId(item.data) : item.data?.lawId;
+    if (!lawId) {
+      setError("Không mở được tóm tắt vì dữ liệu thiếu ID bộ luật.");
+      return;
+    }
+    navigate(`${searchBasePath}/detail?id=${lawId}&type=law&mode=summary`);
   };
 
   useEffect(() => {
     window.scrollTo(0, 0);
     const keyword = searchParams.get("q");
 
-    const loadInitialData = async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const response = await lawAPI.getAllLaws(0, 6);
-        if (response?.success) {
-          setSearchResults({
-            laws: response.data.content || [],
-            articles: [],
-            totalLaws: response.data.totalElements || 0,
-            totalArticles: 0,
-            totalResults: response.data.totalElements || 0,
-          });
-          setTotalPages(response.data.totalPages || 0);
-          setCurrentPage(0);
-        }
-      } catch (requestError) {
-        console.error("Load initial laws error:", requestError);
-        setError("Không thể tải dữ liệu pháp luật.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (keyword && typeof keyword === "string") {
       setSearchKeyword(keyword);
       performSearch(keyword, 0);
     } else {
-      loadInitialData();
+      loadInitialLaws(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const filteredResults = useMemo(() => {
-    if (activeFilter === "laws") {
-      return searchResults.laws.map((law, index) => ({
-        id: law.lawId || `law-${index}`,
-        title: law.title,
-        desc: `${law.lawType} - ${law.code} - Có hiệu lực từ ${new Date(law.effectiveDate).toLocaleDateString("vi-VN")}`,
-        type: "law",
-        data: law,
-      }));
-    }
+    const lawResults = searchResults.laws.map((law, index) => ({
+      id: getLawId(law) || `law-${index}`,
+      title: law.title || "Văn bản pháp luật",
+      desc: `${law.lawType || "Văn bản"} - ${law.code || "Chưa có số hiệu"} - Có hiệu lực từ ${law.effectiveDate ? new Date(law.effectiveDate).toLocaleDateString("vi-VN") : "--"}`,
+      type: "law",
+      data: law,
+    }));
 
-    if (activeFilter === "articles") {
-      return searchResults.articles.map((a, index) => ({
-        id: a.articleId || `article-${index}`,
-        title: a.articleTitle,
-        desc: `${a.lawTitle || ""} ${a.chapterTitle || ""}`,
-        type: "article",
-        data: a,
-      }));
-    }
+    const articleResults = searchResults.articles.map((article, index) => ({
+      id: getArticleId(article) || `article-${index}`,
+      title: article.articleTitle || `Điều ${article.articleNumber || ""}`.trim(),
+      desc: `${article.lawTitle || ""} ${article.chapterTitle || ""}`.trim(),
+      type: "article",
+      data: article,
+    }));
 
-    return [
-      ...searchResults.laws.map((law, index) => ({
-        id: law.lawId || `law-${index}`,
-        title: law.title,
-        desc: `${law.lawType} - ${law.code} - Có hiệu lực từ ${new Date(law.effectiveDate).toLocaleDateString("vi-VN")}`,
-        type: "law",
-        data: law,
-      })),
-      ...searchResults.articles.map((a, index) => ({
-        id: a.articleId || `article-${index}`,
-        title: a.articleTitle,
-        desc: `${a.lawTitle || ""} ${a.chapterTitle || ""}`,
-        type: "article",
-        data: a,
-      })),
-    ];
+    if (activeFilter === "laws") return lawResults;
+    if (activeFilter === "articles") return articleResults;
+    return [...lawResults, ...articleResults];
   }, [activeFilter, searchResults]);
 
   return (
@@ -241,9 +227,9 @@ const UserSearch = () => {
               className="usearch-input"
               placeholder="Bộ luật lao động 2019"
               value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSearch();
+              onChange={(event) => setSearchKeyword(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") handleSearch();
               }}
             />
 
@@ -258,7 +244,7 @@ const UserSearch = () => {
             <button className={activeFilter === "all" ? "active" : ""} onClick={() => setActiveFilter("all")}>Tất cả</button>
             <button className={activeFilter === "laws" ? "active" : ""} onClick={() => setActiveFilter("laws")}>Văn bản</button>
             <button className={activeFilter === "articles" ? "active" : ""} onClick={() => setActiveFilter("articles")}>Điều</button>
-            <button type="button" className="usearch-viewall" onClick={handleViewAllArticles}>Xem tất cả điều luật</button>
+            <button type="button" className="usearch-viewall" onClick={handleViewAllLaws}>Xem tất cả văn bản</button>
           </div>
 
           {loading && (
@@ -271,13 +257,13 @@ const UserSearch = () => {
           {!loading && filteredResults.length > 0 && (
             <div className="usearch-card-grid">
               {filteredResults.map((item) => (
-                <article className="usearch-law-card" key={item.id}>
+                <article className="usearch-law-card" key={`${item.type}-${item.id}`}>
                   <h3>{item.title}</h3>
                   <p>{item.desc}</p>
 
                   <div className="usearch-card-actions">
                     <button type="button" onClick={() => handleViewDetail(item)}>Xem chi tiết</button>
-                    <button type="button" className="primary" onClick={() => handleViewDetail(item)}>Xem giải thích</button>
+                    <button type="button" className="primary" onClick={() => handleViewSummary(item)}>Tóm tắt bộ luật</button>
                   </div>
                 </article>
               ))}
@@ -293,9 +279,9 @@ const UserSearch = () => {
               <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 0}>
                 &lt; Trước
               </button>
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => (
-                <button key={i} className={currentPage === i ? "active" : ""} onClick={() => handlePageChange(i)}>
-                  {i + 1}
+              {Array.from({ length: Math.min(5, totalPages) }, (_, index) => (
+                <button key={index} className={currentPage === index ? "active" : ""} onClick={() => handlePageChange(index)}>
+                  {index + 1}
                 </button>
               ))}
               <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages - 1}>

@@ -19,8 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.*;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +105,7 @@ public class ChatbotService {
 
         List<String> sources = new ArrayList<>();
         List<String> chunks = new ArrayList<>();
+        Integer chatId = null;
 
         try {
             ResponseEntity<?> response =
@@ -156,19 +157,53 @@ public class ChatbotService {
             log.setQuestionClean(normalize(question));
             log.setSourceRole("USER");
             log.setConversationId(conversationId);
+            log.setReviewStatus("NEW");
 
-            chatbotRepo.save(log);
+            chatId = chatbotRepo.save(log).getId();
         }
 
         // -------------------------------------------------
         // 6️⃣ RETURN RESPONSE
         // -------------------------------------------------
-        return new ChatResponseDTO(
+        ChatResponseDTO result = new ChatResponseDTO(
                 question,
                 answer,
                 sources,
                 chunks
         );
+        result.setChatId(chatId);
+        return result;
+    }
+
+    public ChatResponseDTO updateFeedback(Integer chatId, String feedbackStatus, String reason) {
+        ChatbotLog log = chatbotRepo.findById(chatId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy log chatbot"));
+
+        String normalized = normalizeFeedbackStatus(feedbackStatus);
+        log.setFeedbackStatus(normalized);
+        log.setFeedbackReason(reason != null ? reason.trim() : null);
+        log.setFeedbackAt(LocalDateTime.now());
+        if ("REPORTED".equals(normalized) && (log.getReviewStatus() == null || "RESOLVED".equals(log.getReviewStatus()))) {
+            log.setReviewStatus("NEW");
+        }
+        chatbotRepo.save(log);
+
+        ChatResponseDTO response = new ChatResponseDTO(
+                log.getQuestion(),
+                log.getAnswer(),
+                List.of(),
+                List.of()
+        );
+        response.setChatId(log.getId());
+        return response;
+    }
+
+    public void updateReview(Integer chatId, String reviewStatus, String note) {
+        ChatbotLog log = chatbotRepo.findById(chatId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy log chatbot"));
+        log.setReviewStatus(normalizeReviewStatus(reviewStatus));
+        log.setReviewNote(note != null ? note.trim() : null);
+        chatbotRepo.save(log);
     }
 
     // =====================================================
@@ -191,12 +226,18 @@ public class ChatbotService {
         Collections.reverse(logs);
 
         return logs.stream()
-                .map(l -> new ChatHistoryDTO(
-                l.getConversationId(),
-                        l.getQuestion(),
-                        l.getAnswer(),
-                        l.getCreatedAt().toString()
-                ))
+                .map(l -> {
+                    ChatHistoryDTO dto = new ChatHistoryDTO(
+                            l.getConversationId(),
+                            l.getQuestion(),
+                            l.getAnswer(),
+                            l.getCreatedAt().toString()
+                    );
+                    dto.setChatId(l.getId());
+                    dto.setFeedbackStatus(l.getFeedbackStatus());
+                    dto.setFeedbackReason(l.getFeedbackReason());
+                    return dto;
+                })
                 .toList();
     }
 
@@ -215,5 +256,20 @@ public class ChatbotService {
                 .replaceAll("[^a-zA-Z0-9àáạãảâấầậẫẩăắằặẵẳđèéẹẽẻêếềệễể"
                         + "ìíịĩỉòóọõỏôốồộỗổơớờợỡởùúụũủưứừựữử"
                         + "ỳýỵỹỷ\\s]", "").trim();
+    }
+
+    private String normalizeFeedbackStatus(String feedbackStatus) {
+        if (feedbackStatus == null) return "HELPFUL";
+        String normalized = feedbackStatus.trim().toUpperCase(Locale.ROOT);
+        return "REPORTED".equals(normalized) ? "REPORTED" : "HELPFUL";
+    }
+
+    private String normalizeReviewStatus(String reviewStatus) {
+        if (reviewStatus == null) return "NEW";
+        String normalized = reviewStatus.trim().toUpperCase(Locale.ROOT);
+        if ("IN_PROGRESS".equals(normalized) || "RESOLVED".equals(normalized)) {
+            return normalized;
+        }
+        return "NEW";
     }
 }

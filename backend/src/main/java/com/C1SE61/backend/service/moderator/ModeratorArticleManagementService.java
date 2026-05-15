@@ -21,11 +21,11 @@ public class ModeratorArticleManagementService {
         Page<Article> articles;
 
         if (StringUtils.hasText(keyword)) {
-            articles = articleRepository.searchArticles(keyword.trim(), pageable);
+            articles = articleRepository.searchArticlesForModerator(keyword.trim(), pageable);
         } else if (chapterId != null) {
-            articles = articleRepository.findByChapterId(chapterId, pageable);
+            articles = articleRepository.findByChapterIdForModerator(chapterId, pageable);
         } else if (lawId != null) {
-            articles = articleRepository.findByLawId(lawId, pageable);
+            articles = articleRepository.findByLawIdForModerator(lawId, pageable);
         } else {
             articles = articleRepository.findAll(pageable);
         }

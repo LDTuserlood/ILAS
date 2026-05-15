@@ -45,6 +45,21 @@ public class ChatbotLog {
     @Column(name = "conversation_id", length = 64)
     private String conversationId;
 
+    @Column(name = "feedback_status", length = 20)
+    private String feedbackStatus;
+
+    @Column(name = "feedback_reason", columnDefinition = "TEXT")
+    private String feedbackReason;
+
+    @Column(name = "feedback_at")
+    private LocalDateTime feedbackAt;
+
+    @Column(name = "review_status", length = 20)
+    private String reviewStatus;
+
+    @Column(name = "review_note", columnDefinition = "TEXT")
+    private String reviewNote;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

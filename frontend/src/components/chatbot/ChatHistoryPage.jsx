@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { getChatHistory, sendChatMessage } from "../../api/chatbotAPI";
+import { getChatHistory, sendChatFeedback, sendChatMessage } from "../../api/chatbotAPI";
 import ReactMarkdown from "react-markdown";
 import UserSidebar from "../user/UserSidebar";
 import "../../styles/user/DashboardPage.css";
@@ -192,10 +192,13 @@ export default function ChatHistoryPage() {
       const data = await sendChatMessage(userId, question, true, conversationId);
       const nowIso = new Date().toISOString();
       const newLog = {
+        chatId: data?.chatId,
         conversationId,
         question,
         answer: data?.answer || "⚠️ AI chưa trả về nội dung.",
         createdAt: nowIso,
+        feedbackStatus: null,
+        feedbackReason: null,
       };
 
       setConversations((prev) => {
@@ -246,6 +249,40 @@ export default function ChatHistoryPage() {
 
     setSelectedConversationId(conversationId);
     setInput("");
+  };
+
+  const handleFeedback = async (conversationId, logIndex, chatLog, feedbackStatus) => {
+    if (!chatLog?.chatId || chatLog.feedbackStatus) return;
+
+    const reason =
+      feedbackStatus === "REPORTED"
+        ? window.prompt("Bạn thấy câu trả lời chưa đúng ở đâu?") || ""
+        : "";
+
+    try {
+      await sendChatFeedback(chatLog.chatId, feedbackStatus, reason);
+      setConversations((prev) => {
+        const existing = prev[conversationId];
+        if (!existing) return prev;
+
+        const nextLogs = existing.logs.map((log, index) =>
+          index === logIndex
+            ? { ...log, feedbackStatus, feedbackReason: reason }
+            : log
+        );
+
+        return {
+          ...prev,
+          [conversationId]: {
+            ...existing,
+            logs: nextLogs,
+          },
+        };
+      });
+    } catch (error) {
+      console.error("Submit full chat feedback failed:", error);
+      alert("Không thể gửi phản hồi. Vui lòng thử lại.");
+    }
   };
 
   return (
@@ -320,6 +357,32 @@ export default function ChatHistoryPage() {
                   <div className="chatassist-markdown">
                     <ReactMarkdown>{chatLog.answer}</ReactMarkdown>
                   </div>
+
+                  {chatLog.chatId && (
+                    <div className="chatassist-feedback-actions">
+                      {chatLog.feedbackStatus ? (
+                        <span className={`chatassist-feedback-state ${chatLog.feedbackStatus === "REPORTED" ? "reported" : "helpful"}`}>
+                          {chatLog.feedbackStatus === "REPORTED" ? "Đã ghi nhận phản đối" : "Đã ghi nhận hữu ích"}
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleFeedback(selectedConversationId, index, chatLog, "HELPFUL")}
+                          >
+                            Hữu ích
+                          </button>
+                          <button
+                            type="button"
+                            className="report"
+                            onClick={() => handleFeedback(selectedConversationId, index, chatLog, "REPORTED")}
+                          >
+                            Không đúng
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </article>
               </div>
             ))}

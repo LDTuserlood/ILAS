@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../../styles/chatbot/ChatWidget.css";
-import { sendChatMessage, getChatHistory } from "../../api/chatbotAPI";
+import { sendChatFeedback, sendChatMessage, getChatHistory } from "../../api/chatbotAPI";
 import ReactMarkdown from "react-markdown";
 
 export default function ChatWidget() {
@@ -74,7 +74,7 @@ export default function ChatWidget() {
 
     try {
       const res = await sendChatMessage(userId, text, true);
-      setMessages((p) => [...p, { sender: "bot", text: res.answer }]);
+      setMessages((p) => [...p, { sender: "bot", text: res.answer, chatId: res.chatId, feedback: null }]);
     } catch {
       setMessages((p) => [
         ...p,
@@ -82,6 +82,29 @@ export default function ChatWidget() {
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFeedback = async (messageIndex, feedbackStatus) => {
+    const target = messages[messageIndex];
+    if (!target?.chatId || target.feedback) return;
+
+    const reason =
+      feedbackStatus === "REPORTED"
+        ? window.prompt("Bạn thấy câu trả lời chưa đúng ở đâu?") || ""
+        : "";
+
+    try {
+      await sendChatFeedback(target.chatId, feedbackStatus, reason);
+      setMessages((prev) =>
+        prev.map((msg, index) =>
+          index === messageIndex
+            ? { ...msg, feedback: feedbackStatus, feedbackReason: reason }
+            : msg
+        )
+      );
+    } catch (error) {
+      console.error("Submit chatbot feedback failed:", error);
     }
   };
 
@@ -144,7 +167,27 @@ export default function ChatWidget() {
                   }`}
                 >
                   {m.sender === "bot" ? (
-                    <ReactMarkdown>{m.text}</ReactMarkdown>
+                    <>
+                      <ReactMarkdown>{m.text}</ReactMarkdown>
+                      {m.chatId && (
+                        <div className="chat-feedback-actions">
+                          {m.feedback ? (
+                            <span className={`chat-feedback-state ${m.feedback === "REPORTED" ? "reported" : "helpful"}`}>
+                              {m.feedback === "REPORTED" ? "Đã ghi nhận phản đối" : "Đã ghi nhận hữu ích"}
+                            </span>
+                          ) : (
+                            <>
+                              <button type="button" onClick={() => handleFeedback(i, "HELPFUL")}>
+                                Hữu ích
+                              </button>
+                              <button type="button" className="report" onClick={() => handleFeedback(i, "REPORTED")}>
+                                Không đúng
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
                     m.text
                   )}

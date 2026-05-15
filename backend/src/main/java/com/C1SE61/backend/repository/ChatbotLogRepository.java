@@ -30,8 +30,24 @@ public interface ChatbotLogRepository extends JpaRepository<ChatbotLog, Integer>
     @Query("SELECT COUNT(c) FROM ChatbotLog c WHERE c.sourceType = 'error' OR c.answer LIKE '%fallback%' ")
     Long countFailed();
 
+    @Query("SELECT COUNT(c) FROM ChatbotLog c WHERE c.feedbackStatus = 'HELPFUL'")
+    Long countHelpful();
+
+    @Query("SELECT COUNT(c) FROM ChatbotLog c WHERE c.feedbackStatus = 'REPORTED'")
+    Long countReported();
+
+    @Query("SELECT COUNT(c) FROM ChatbotLog c WHERE c.feedbackStatus IS NULL OR c.feedbackStatus = ''")
+    Long countUnrated();
+
+    @Query("SELECT COUNT(c) FROM ChatbotLog c WHERE c.feedbackStatus = 'REPORTED' AND (c.reviewStatus IS NULL OR c.reviewStatus <> 'RESOLVED')")
+    Long countOpenReports();
+
     @Query("SELECT c FROM ChatbotLog c ORDER BY c.createdAt DESC")
     List<ChatbotLog> findAllLogs();
+
+    @Query("SELECT c FROM ChatbotLog c WHERE c.feedbackStatus = 'REPORTED' ORDER BY c.feedbackAt DESC, c.createdAt DESC")
+    List<ChatbotLog> findReportedLogs();
+
         @Query("""
         SELECT c FROM ChatbotLog c
         WHERE c.user.userId = :userId

@@ -28,11 +28,23 @@ public class ChatbotAdminService {
         Long total = repo.count();
         Long failed = repo.countFailed();
         Long success = total - failed;
+        Long helpful = repo.countHelpful();
+        Long reported = repo.countReported();
+        Long unrated = repo.countUnrated();
+        Long openReports = repo.countOpenReports();
+        Long rated = helpful + reported;
+        double satisfactionRate = rated > 0 ? (helpful * 100.0 / rated) : 100.0;
 
         return Map.of(
                 "totalConversations", total,
+                "totalQuestions", total,
                 "successfulResponses", success,
                 "failedResponses", failed,
+                "helpfulResponses", helpful,
+                "reportedResponses", reported,
+                "unratedResponses", unrated,
+                "openReports", openReports,
+                "satisfactionRate", Math.round(satisfactionRate * 10.0) / 10.0,
                 "averageResponseTime", "N/A"
         );
     }
@@ -52,7 +64,36 @@ public class ChatbotAdminService {
                         l.getAnswer(),
                         l.getCreatedAt().toString(),
                         (l.getSourceType() != null && !l.getSourceType().equals("error")) 
-                                ? "success" : "error"
+                                ? "success" : "error",
+                        l.getSourceType(),
+                        l.getSourceTitle(),
+                        l.getFeedbackStatus(),
+                        l.getFeedbackReason(),
+                        l.getFeedbackAt() != null ? l.getFeedbackAt().toString() : null,
+                        l.getReviewStatus(),
+                        l.getReviewNote()
+                )).toList();
+    }
+
+    public List<ChatbotLogAdminDTO> getReportedLogs() {
+        List<ChatbotLog> logs = repo.findReportedLogs();
+
+        return logs.stream()
+                .map(l -> new ChatbotLogAdminDTO(
+                        l.getId(),
+                        l.getUser() != null ? l.getUser().getEmail() : "Guest",
+                        l.getQuestion(),
+                        l.getAnswer(),
+                        l.getCreatedAt().toString(),
+                        (l.getSourceType() != null && !l.getSourceType().equals("error"))
+                                ? "success" : "error",
+                        l.getSourceType(),
+                        l.getSourceTitle(),
+                        l.getFeedbackStatus(),
+                        l.getFeedbackReason(),
+                        l.getFeedbackAt() != null ? l.getFeedbackAt().toString() : null,
+                        l.getReviewStatus(),
+                        l.getReviewNote()
                 )).toList();
     }
 

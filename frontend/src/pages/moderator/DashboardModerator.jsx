@@ -1,217 +1,109 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
+  FiAlertTriangle,
+  FiBarChart2,
   FiCheckCircle,
-  FiClock,
   FiDownload,
-  FiEdit3,
-  FiFileText,
   FiMessageCircle,
   FiRefreshCw,
+  FiThumbsUp,
 } from "react-icons/fi";
 import ModeratorDashboardLayout from "../../components/moderator/ModeratorDashboardLayout";
 import "../../styles/moderator/DashboardModerator.css";
 
-const API_ROOT = "http://localhost:8080/api/moderator";
+const CHATBOT_API = "http://localhost:8080/api/chatbot";
 
-const statusLabel = {
-  APPROVED: "Đã duyệt",
-  REJECTED: "Bị từ chối",
-  PENDING: "Đang chờ",
-  RESOLVED: "Đã xử lý",
-  DRAFT: "Bản nháp",
+const formatDate = (value) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("vi-VN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
-const statusTone = {
-  APPROVED: "approved",
-  REJECTED: "rejected",
-  PENDING: "pending",
+const reviewLabel = {
+  NEW: "Cần kiểm tra",
+  IN_PROGRESS: "Đang xử lý",
+  RESOLVED: "Đã xử lý",
+};
+
+const reviewTone = {
+  NEW: "rejected",
+  IN_PROGRESS: "pending",
   RESOLVED: "resolved",
 };
 
-const parseModeratorId = (token) => {
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return Number(payload.userId ?? payload.id ?? payload.sub ?? null);
-  } catch {
-    return null;
-  }
-};
-
 export default function DashboardModerator() {
-  const [moderatorId, setModeratorId] = useState(null);
-  const [dashboardData, setDashboardData] = useState({
-    law: { stats: {}, recentWorks: [] },
-    form: { stats: {}, recentForms: [] },
-    feedback: { stats: {}, recent: [] },
-  });
+  const [stats, setStats] = useState({});
+  const [logs, setLogs] = useState([]);
+  const [reportedLogs, setReportedLogs] = useState([]);
+  const [topQuestions, setTopQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    setModeratorId(parseModeratorId(localStorage.getItem("token")));
-  }, []);
+  const [actionLoadingId, setActionLoadingId] = useState(null);
 
   const loadDashboard = useCallback(async () => {
-    if (!moderatorId) {
-      setLoading(false);
-      return;
-    }
-
-    const token = localStorage.getItem("token");
-    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
-
     setLoading(true);
     setError("");
 
-    const [lawRes, formRes, feedbackRes] = await Promise.allSettled([
-      axios.get(`${API_ROOT}/law-stats/${moderatorId}`, { headers }),
-      axios.get(`${API_ROOT}/form-stats/${moderatorId}`, { headers }),
-      axios.get(`${API_ROOT}/feedback-stats/${moderatorId}`, { headers }),
-    ]);
+    try {
+      const [statsRes, logsRes, reportedRes, topRes] = await Promise.all([
+        axios.get(`${CHATBOT_API}/admin/stats`),
+        axios.get(`${CHATBOT_API}/admin/logs`),
+        axios.get(`${CHATBOT_API}/admin/reported`),
+        axios.get(`${CHATBOT_API}/top-questions`),
+      ]);
 
-    const nextData = {
-      law: lawRes.status === "fulfilled" ? lawRes.value.data || {} : { stats: {}, recentWorks: [] },
-      form: formRes.status === "fulfilled" ? formRes.value.data || {} : { stats: {}, recentForms: [] },
-      feedback:
-        feedbackRes.status === "fulfilled"
-          ? feedbackRes.value.data || {}
-          : { stats: {}, recent: [] },
-    };
-
-    if (
-      lawRes.status === "rejected" &&
-      formRes.status === "rejected" &&
-      feedbackRes.status === "rejected"
-    ) {
-      setError("Không thể tải dữ liệu dashboard moderator.");
+      setStats(statsRes.data || {});
+      setLogs(Array.isArray(logsRes.data) ? logsRes.data : []);
+      setReportedLogs(Array.isArray(reportedRes.data) ? reportedRes.data : []);
+      setTopQuestions(Array.isArray(topRes.data) ? topRes.data : []);
+    } catch (requestError) {
+      console.error("Load chatbot quality dashboard failed:", requestError);
+      setError("Không thể tải dữ liệu chất lượng chatbot.");
+    } finally {
+      setLoading(false);
     }
-
-    setDashboardData(nextData);
-    setLoading(false);
-  }, [moderatorId]);
+  }, []);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
-  const summary = useMemo(() => {
-    const lawStats = dashboardData.law.stats || {};
-    const formStats = dashboardData.form.stats || {};
-    const feedbackStats = dashboardData.feedback.stats || {};
+  const recentQuestions = useMemo(() => logs.slice(0, 6), [logs]);
 
-    const resolvedCount =
-      (lawStats.approved || 0) +
-      (formStats.approved || 0) +
-      (feedbackStats.resolved || 0);
+  const satisfactionRate = Number(stats.satisfactionRate ?? 100);
+  const hasReports = Number(stats.reportedResponses || 0) > 0;
+  const reportedCount = Number(stats.reportedResponses || 0);
+  const openReportCount = Number(stats.openReports || 0);
+  const resolvedReportCount = Math.max(0, reportedCount - openReportCount);
 
-    const pendingCount =
-      (lawStats.pending || 0) +
-      (formStats.pending || 0) +
-      (feedbackStats.pending || 0);
-
-    const requiresUpdateCount =
-      (lawStats.rejected || 0) +
-      (formStats.rejected || 0) +
-      (formStats.draft || 0);
-
-    const totalAssigned =
-      resolvedCount +
-      pendingCount +
-      requiresUpdateCount;
-
-    const completionRate =
-      totalAssigned > 0 ? ((resolvedCount / totalAssigned) * 100).toFixed(1) : "0.0";
-
-    return {
-      completionRate,
-      resolvedCount,
-      pendingCount,
-      requiresUpdateCount,
-      totalAssigned,
-    };
-  }, [dashboardData]);
-
-  const recentLogs = useMemo(() => {
-    const lawLogs = (dashboardData.law.recentWorks || []).map((item, index) => ({
-      id: `law-${item.id ?? index}`,
-      action: "Cập nhật luật",
-      icon: <FiEdit3 />,
-      itemName: item.articleTitle || "Bài luật chưa đặt tên",
-      source: "Luật",
-      status: item.status || "PENDING",
-    }));
-
-    const formLogs = (dashboardData.form.recentForms || []).map((item, index) => ({
-      id: `form-${item.templateId ?? index}`,
-      action: "Duyệt biểu mẫu",
-      icon: <FiFileText />,
-      itemName: item.title || "Biểu mẫu chưa đặt tên",
-      source: "Biểu mẫu",
-      status: (item.status || "draft").toUpperCase(),
-    }));
-
-    const feedbackLogs = (dashboardData.feedback.recent || []).map((item, index) => ({
-      id: `feedback-${item.id ?? index}`,
-      action: "Xử lý phản hồi",
-      icon: <FiMessageCircle />,
-      itemName: item.articleTitle || item.content || "Phản hồi người dùng",
-      source: "Phản hồi",
-      status: item.status || "PENDING",
-    }));
-
-    return [...lawLogs, ...formLogs, ...feedbackLogs].slice(0, 6);
-  }, [dashboardData]);
-
-  const moduleWorkloads = useMemo(() => {
-    const lawStats = dashboardData.law.stats || {};
-    const formStats = dashboardData.form.stats || {};
-    const feedbackStats = dashboardData.feedback.stats || {};
-
-    const rows = [
-      {
-        name: "Luật",
-        total: (lawStats.approved || 0) + (lawStats.pending || 0) + (lawStats.rejected || 0),
-        pending: lawStats.pending || 0,
-      },
-      {
-        name: "Biểu mẫu",
-        total:
-          (formStats.approved || 0) +
-          (formStats.pending || 0) +
-          (formStats.rejected || 0) +
-          (formStats.draft || 0),
-        pending: formStats.pending || 0,
-      },
-      {
-        name: "Phản hồi",
-        total: (feedbackStats.pending || 0) + (feedbackStats.resolved || 0),
-        pending: feedbackStats.pending || 0,
-      },
-    ];
-
-    const maxTotal = Math.max(1, ...rows.map((row) => row.total));
-
-    return rows.map((row) => ({
-      ...row,
-      progress: Math.round((row.total / maxTotal) * 100),
-    }));
-  }, [dashboardData]);
-
-  const busiestModule = useMemo(() => {
-    if (moduleWorkloads.length === 0) return null;
-    return [...moduleWorkloads].sort((left, right) => right.pending - left.pending)[0];
-  }, [moduleWorkloads]);
+  const handleReview = async (chatId, reviewStatus) => {
+    try {
+      setActionLoadingId(chatId);
+      await axios.post(`${CHATBOT_API}/admin/logs/${chatId}/review`, {
+        reviewStatus,
+        note: reviewStatus === "RESOLVED" ? "Moderator đã kiểm tra phản hồi của người dùng." : "",
+      });
+      await loadDashboard();
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   const exportReport = () => {
     const payload = {
       generatedAt: new Date().toISOString(),
-      summary,
-      recentLogs,
-      moduleWorkloads,
-      source: dashboardData,
+      stats,
+      reportedLogs,
+      recentQuestions,
+      topQuestions,
     };
 
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
@@ -220,7 +112,7 @@ export default function DashboardModerator() {
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `moderator-dashboard-${Date.now()}.json`;
+    link.download = `moderator-ai-quality-${Date.now()}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -230,10 +122,10 @@ export default function DashboardModerator() {
   return (
     <ModeratorDashboardLayout
       title="Dashboard Moderator"
-      description="Tổng quan công việc theo dữ liệu thực tế của luật, biểu mẫu và phản hồi."
+      description="Theo dõi câu hỏi người dùng, phản hồi chất lượng AI và các câu trả lời bị đánh dấu không đúng."
       actions={
         <>
-          <button type="button" className="moderator-workspace-action-btn" onClick={loadDashboard} disabled={!moderatorId}>
+          <button type="button" className="moderator-workspace-action-btn" onClick={loadDashboard}>
             <FiRefreshCw />
             Làm mới
           </button>
@@ -249,119 +141,213 @@ export default function DashboardModerator() {
           <article className="moderator-dashboard-stat-card">
             <div className="moderator-dashboard-stat-top">
               <div className="moderator-dashboard-stat-icon accuracy">
-                <FiCheckCircle />
+                <FiThumbsUp />
               </div>
-              <span className="moderator-dashboard-stat-badge positive">{summary.completionRate}%</span>
+              <span className={`moderator-dashboard-stat-badge ${hasReports ? "warning" : "positive"}`}>
+                {hasReports ? "Có phản đối" : "Ổn định"}
+              </span>
             </div>
-            <h3>Tỷ lệ hoàn thành</h3>
-            <strong>{summary.completionRate}%</strong>
+            <h3>Tỷ lệ hài lòng</h3>
+            <strong>{satisfactionRate.toFixed(1)}%</strong>
           </article>
 
           <article className="moderator-dashboard-stat-card">
             <div className="moderator-dashboard-stat-top">
               <div className="moderator-dashboard-stat-icon approved">
-                <FiFileText />
+                <FiMessageCircle />
               </div>
-              <span className="moderator-dashboard-stat-badge info">Đã xử lý</span>
+              <span className="moderator-dashboard-stat-badge info">Tổng log</span>
             </div>
-            <h3>Đầu việc đã xử lý</h3>
-            <strong>{summary.resolvedCount.toLocaleString("vi-VN")}</strong>
+            <h3>Câu hỏi người dùng</h3>
+            <strong>{Number(stats.totalQuestions || 0).toLocaleString("vi-VN")}</strong>
           </article>
 
           <article className="moderator-dashboard-stat-card">
             <div className="moderator-dashboard-stat-top">
               <div className="moderator-dashboard-stat-icon pending">
-                <FiClock />
+                <FiAlertTriangle />
               </div>
-              <span className="moderator-dashboard-stat-badge warning">Cần theo dõi</span>
+              <span className="moderator-dashboard-stat-badge warning">Mở: {openReportCount}</span>
             </div>
-            <h3>Đầu việc đang chờ</h3>
-            <strong>{summary.pendingCount}</strong>
+            <h3>Tổng phản đối</h3>
+            <strong>{reportedCount.toLocaleString("vi-VN")}</strong>
+            <p className="moderator-dashboard-stat-detail">
+              Đã xử lý: <b>{resolvedReportCount.toLocaleString("vi-VN")}</b>
+            </p>
           </article>
         </section>
 
         <section className="moderator-dashboard-layout">
           <article className="moderator-dashboard-card logs">
             <div className="moderator-dashboard-section-head">
-              <h2>Hoạt động gần đây</h2>
-              <button type="button" className="moderator-dashboard-link-btn">
-                Xem tất cả
-              </button>
+              <h2>Câu trả lời bị phản đối</h2>
+              <span className="moderator-dashboard-link-btn">{reportedLogs.length} mục</span>
             </div>
 
             {loading ? (
-              <div className="moderator-dashboard-empty">Đang tải dữ liệu moderation...</div>
+              <div className="moderator-dashboard-empty">Đang tải dữ liệu chatbot...</div>
             ) : error ? (
               <div className="moderator-dashboard-empty">{error}</div>
-            ) : recentLogs.length === 0 ? (
-              <div className="moderator-dashboard-empty">Chưa có log hoạt động gần đây.</div>
+            ) : reportedLogs.length === 0 ? (
+              <div className="moderator-dashboard-empty">
+                Chưa có câu trả lời nào bị người dùng phản đối. Tỷ lệ hài lòng đang được tính là 100%.
+              </div>
             ) : (
-              <div className="moderator-dashboard-table">
+              <div className="moderator-dashboard-table ai-quality">
                 <div className="moderator-dashboard-table-header">
-                  <span>Hành động</span>
-                  <span>Nội dung</span>
-                  <span>Nhóm</span>
+                  <span>Người hỏi</span>
+                  <span>Câu hỏi</span>
+                  <span>Lý do phản đối</span>
                   <span>Trạng thái</span>
+                  <span>Hành động</span>
                 </div>
 
-                {recentLogs.map((log) => (
-                  <div key={log.id} className="moderator-dashboard-table-row">
-                    <div className="moderator-dashboard-row-action">
-                      {log.icon}
-                      <span>{log.action}</span>
+                {reportedLogs.map((log) => {
+                  const reviewStatus = log.reviewStatus || "NEW";
+                  return (
+                    <div key={log.id} className="moderator-dashboard-table-row">
+                      <div className="moderator-dashboard-row-action">
+                        <FiMessageCircle />
+                        <span>{log.user || "Guest"}</span>
+                      </div>
+                      <div className="moderator-dashboard-row-title">{log.question}</div>
+                      <div className="moderator-dashboard-row-moderator">
+                        {log.feedbackReason || "Người dùng đánh dấu câu trả lời không đúng."}
+                      </div>
+                      <div>
+                        <span className={`moderator-dashboard-status ${reviewTone[reviewStatus] || "pending"}`}>
+                          {reviewLabel[reviewStatus] || reviewStatus}
+                        </span>
+                      </div>
+                      <div className="moderator-dashboard-row-actions">
+                        {reviewStatus !== "IN_PROGRESS" && reviewStatus !== "RESOLVED" && (
+                          <button
+                            type="button"
+                            onClick={() => handleReview(log.id, "IN_PROGRESS")}
+                            disabled={actionLoadingId === log.id}
+                          >
+                            Nhận xử lý
+                          </button>
+                        )}
+                        {reviewStatus !== "RESOLVED" && (
+                          <button
+                            type="button"
+                            className="primary"
+                            onClick={() => handleReview(log.id, "RESOLVED")}
+                            disabled={actionLoadingId === log.id}
+                          >
+                            Đã kiểm tra
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="moderator-dashboard-row-title">{log.itemName}</div>
-                    <div className="moderator-dashboard-row-moderator">{log.source}</div>
-                    <div>
-                      <span className={`moderator-dashboard-status ${statusTone[log.status] || "pending"}`}>
-                        {statusLabel[log.status] || log.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </article>
 
           <aside className="moderator-dashboard-card side">
             <div className="moderator-dashboard-section-head">
-              <h2>Phân bổ theo mảng công việc</h2>
+              <h2>Tổng quan AI</h2>
             </div>
 
             <div className="moderator-dashboard-region-list">
-              {moduleWorkloads.map((module) => (
-                <div key={module.name} className="moderator-dashboard-region-item">
-                  <div className="moderator-dashboard-region-head">
-                    <span className="moderator-dashboard-region-name">{module.name}</span>
-                    <span className="moderator-dashboard-region-value">{module.total} đầu việc</span>
-                  </div>
-                  <div className="moderator-dashboard-workload-meta">
-                    <span>Đang chờ: {module.pending}</span>
-                    <span>Tổng: {module.total}</span>
-                  </div>
-                  <div className="moderator-dashboard-progress">
-                    <span style={{ width: `${module.progress}%` }}></span>
-                  </div>
+              <div className="moderator-dashboard-region-item">
+                <div className="moderator-dashboard-region-head">
+                  <span className="moderator-dashboard-region-name">Hữu ích</span>
+                  <span className="moderator-dashboard-region-value">{stats.helpfulResponses || 0}</span>
                 </div>
-              ))}
+                <div className="moderator-dashboard-progress">
+                  <span style={{ width: `${Math.min(100, satisfactionRate)}%` }}></span>
+                </div>
+              </div>
+
+              <div className="moderator-dashboard-region-item">
+                <div className="moderator-dashboard-region-head">
+                  <span className="moderator-dashboard-region-name">Bị phản đối</span>
+                  <span className="moderator-dashboard-region-value">{stats.reportedResponses || 0}</span>
+                </div>
+                <div className="moderator-dashboard-progress danger">
+                  <span style={{ width: `${Math.min(100, 100 - satisfactionRate)}%` }}></span>
+                </div>
+              </div>
+
+              <div className="moderator-dashboard-region-item">
+                <div className="moderator-dashboard-region-head">
+                  <span className="moderator-dashboard-region-name">Chưa đánh giá</span>
+                  <span className="moderator-dashboard-region-value">{stats.unratedResponses || 0}</span>
+                </div>
+              </div>
             </div>
 
             <div className="moderator-dashboard-health-box">
               <div className="moderator-dashboard-health-head">
-                <FiClock />
-                <span>Gợi ý điều phối</span>
+                <FiBarChart2 />
+                <span>Top câu hỏi</span>
               </div>
-              <p>
-                {busiestModule
-                  ? `Mảng ${busiestModule.name} đang có nhiều đầu việc chờ xử lý nhất (${busiestModule.pending}). Ưu tiên xử lý tại mảng này để giảm tồn đọng.`
-                  : "Chưa có đủ dữ liệu để đưa ra gợi ý điều phối."}
-              </p>
-              <p className="moderator-dashboard-health-hint">
-                Tổng đầu việc hiện tại: <strong>{summary.totalAssigned}</strong> | Cần cập nhật: <strong>{summary.requiresUpdateCount}</strong>
-              </p>
+              {topQuestions.length === 0 ? (
+                <p>Chưa có đủ dữ liệu câu hỏi để tổng hợp.</p>
+              ) : (
+                <div className="moderator-dashboard-top-list">
+                  {topQuestions.slice(0, 5).map((item, index) => (
+                    <div key={`${item.question}-${index}`} className="moderator-dashboard-top-item">
+                      <span>{item.question || item.questionClean}</span>
+                      <strong>{item.count}</strong>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </aside>
         </section>
+
+        <article className="moderator-dashboard-card logs">
+          <div className="moderator-dashboard-section-head">
+            <h2>Câu hỏi gần đây</h2>
+            <FiCheckCircle />
+          </div>
+
+          {recentQuestions.length === 0 ? (
+            <div className="moderator-dashboard-empty">Chưa có câu hỏi chatbot nào.</div>
+          ) : (
+            <div className="moderator-dashboard-table recent-ai">
+              <div className="moderator-dashboard-table-header">
+                <span>Người hỏi</span>
+                <span>Câu hỏi</span>
+                <span>Đánh giá</span>
+                <span>Thời gian</span>
+              </div>
+              {recentQuestions.map((log) => (
+                <div key={log.id} className="moderator-dashboard-table-row">
+                  <div className="moderator-dashboard-row-action">
+                    <FiMessageCircle />
+                    <span>{log.user || "Guest"}</span>
+                  </div>
+                  <div className="moderator-dashboard-row-title">{log.question}</div>
+                  <div>
+                    <span
+                      className={`moderator-dashboard-status ${
+                        log.feedbackStatus === "REPORTED"
+                          ? "rejected"
+                          : log.feedbackStatus === "HELPFUL"
+                            ? "resolved"
+                            : "pending"
+                      }`}
+                    >
+                      {log.feedbackStatus === "REPORTED"
+                        ? "Không đúng"
+                        : log.feedbackStatus === "HELPFUL"
+                          ? "Hữu ích"
+                          : "Chưa đánh giá"}
+                    </span>
+                  </div>
+                  <div className="moderator-dashboard-row-moderator">{formatDate(log.timestamp)}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </article>
       </div>
     </ModeratorDashboardLayout>
   );
