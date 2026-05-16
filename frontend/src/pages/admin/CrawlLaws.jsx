@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Clock3, FileSearch, Info, Link2, Logs, Trash2, Zap } from "lucide-react";
+import { BrainCircuit, Clock3, FileSearch, Info, Link2, Logs, Trash2, Zap } from "lucide-react";
 import api from "../../api/api";
 import "../../styles/admin/crawl-laws.css";
 
@@ -8,6 +8,9 @@ export default function AdminCrawlLaws() {
   const [loading, setLoading] = useState(false);
   const [url, setUrl] = useState(process.env.REACT_APP_CRAWLER_DEFAULT_URL || "");
   const [result, setResult] = useState(null);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildLogs, setRebuildLogs] = useState([]);
+  const [rebuildStatus, setRebuildStatus] = useState("ready");
 
   const addLog = (message, status = "info", timeOverride = null) => {
     const time = timeOverride || new Date().toLocaleString("vi-VN");
@@ -20,6 +23,18 @@ export default function AdminCrawlLaws() {
   const clearAll = () => {
     setLogs([]);
     setResult(null);
+  };
+
+  const addRebuildLog = (message, status = "info") => {
+    setRebuildLogs((prev) => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        time: new Date().toLocaleTimeString("vi-VN"),
+        message,
+        status,
+      },
+    ]);
   };
 
   const parseSummaryFromLines = (lines) => {
@@ -133,8 +148,72 @@ export default function AdminCrawlLaws() {
         e?.message ||
         "Lỗi khi cào";
       addLog(msg, "error");
+      const rawLogs = e?.response?.data?.logs;
+      if (rawLogs) {
+        rawLogs
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .forEach((line) => addLog(line, classifyLineStatus(line)));
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRebuild = async () => {
+    setRebuilding(true);
+    setRebuildStatus("running");
+    setRebuildLogs([]);
+
+    addRebuildLog("Bắt đầu rebuild AI từ dữ liệu luật đang active...", "info");
+    addRebuildLog("Đang gọi AI service: http://127.0.0.1:5000/api/admin/rebuild", "info");
+    const steps = [
+      "Đang build vector store luật gốc...",
+      "Đang build vector store FAQ...",
+      "Đang chia chunk dữ liệu pháp luật...",
+      "Đang build dữ liệu rút gọn...",
+      "Đang build BM25 index...",
+      "Đang build topic clusters...",
+    ];
+    let stepIndex = 0;
+    const heartbeat = window.setInterval(() => {
+      addRebuildLog(steps[stepIndex % steps.length], "info");
+      stepIndex += 1;
+    }, 3500);
+
+    try {
+      const res = await api.post("/chatbot/admin/rebuild");
+      const payload = res?.data || {};
+      const lines = String(payload.logs || payload.message || "Rebuild completed")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      lines.forEach((line) => addRebuildLog(line, classifyLineStatus(line)));
+      addRebuildLog("Hoàn tất rebuild. AI đã nạp lại dữ liệu mới.", "success");
+      setRebuildStatus("success");
+    } catch (e) {
+      const payload = e?.response?.data || {};
+      const rawLogs = payload.logs || payload.error || payload.message || e?.message || "Rebuild thất bại";
+      let normalizedLogs = rawLogs;
+      if (typeof rawLogs === "string" && rawLogs.trim().startsWith("{")) {
+        try {
+          const parsed = JSON.parse(rawLogs);
+          normalizedLogs = parsed.logs || parsed.error || parsed.message || rawLogs;
+        } catch {
+          normalizedLogs = rawLogs;
+        }
+      }
+      String(normalizedLogs)
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .forEach((line) => addRebuildLog(line, "error"));
+      setRebuildStatus("error");
+    } finally {
+      window.clearInterval(heartbeat);
+      setRebuilding(false);
     }
   };
 
@@ -206,6 +285,64 @@ export default function AdminCrawlLaws() {
           <Trash2 size={16} />
           Xóa log
         </button>
+      </div>
+
+      <div className="crawl-rebuild-card">
+        <div className="crawl-rebuild-head">
+          <div>
+            <span className="crawl-card-title">
+              <BrainCircuit size={17} />
+              Rebuild AI Knowledge
+            </span>
+            <p>
+              Sau khi cào luật xong, bấm rebuild để AI đọc lại dữ liệu active trong MySQL và tạo lại index trả lời.
+            </p>
+          </div>
+
+          <div className="crawl-rebuild-actions">
+            <span className={`crawl-badge ${
+              rebuildStatus === "success"
+                ? "badge-success"
+                : rebuildStatus === "error"
+                ? "badge-error"
+                : rebuildStatus === "running"
+                ? "badge-running"
+                : "badge-ready"
+            }`}>
+              {rebuildStatus === "success"
+                ? "Hoàn tất"
+                : rebuildStatus === "error"
+                ? "Có lỗi"
+                : rebuildStatus === "running"
+                ? "Đang rebuild"
+                : "Sẵn sàng"}
+            </span>
+            <button
+              type="button"
+              className={`crawl-btn rebuild-ai ${rebuilding ? "is-loading" : ""}`}
+              disabled={rebuilding}
+              onClick={handleRebuild}
+            >
+              <BrainCircuit size={16} />
+              {rebuilding ? "Đang rebuild..." : "Rebuild AI"}
+            </button>
+          </div>
+        </div>
+
+        <div className="crawl-rebuild-console">
+          {rebuildLogs.length === 0 ? (
+            <div className="crawl-console-empty">
+              Chưa chạy rebuild. Log build vector store, BM25 và topic cluster sẽ hiện ở đây.
+            </div>
+          ) : (
+            rebuildLogs.map((log) => (
+              <div className={`crawl-console-line ${log.status}`} key={log.id}>
+                <span className="mono">{log.time}</span>
+                <span>{log.message}</span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       <div className="crawl-grid">

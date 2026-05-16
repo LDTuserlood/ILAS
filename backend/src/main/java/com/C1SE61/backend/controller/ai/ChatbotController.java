@@ -15,6 +15,7 @@ import com.C1SE61.backend.service.ai.ChatbotAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -87,8 +88,14 @@ public class ChatbotController {
     public ResponseEntity<?> rebuildAI() {
         RestTemplate rest = new RestTemplate();
         try {
-            rest.postForEntity("http://127.0.0.1:5000/api/admin/rebuild", null, String.class);
-            return ResponseEntity.ok(Map.of("message", "Rebuild started"));
+            ResponseEntity<Map> response =
+                    rest.postForEntity("http://127.0.0.1:5000/api/admin/rebuild", null, Map.class);
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (HttpStatusCodeException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(Map.of(
+                    "error", e.getMessage(),
+                    "logs", e.getResponseBodyAsString()
+            ));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }

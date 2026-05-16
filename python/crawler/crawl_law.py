@@ -12,9 +12,33 @@ from .db_inserts import insert_chapter, insert_section, insert_article
 from .archive_cleanup import (
     archive_other_laws,
     archive_old_data,
-    cleanup_versions
 )
 from .log_utils import log_step
+
+
+def normalize_chapter_number(chapter_text: str, fallback_name: str = "") -> str:
+    text = re.sub(r"\s+", " ", (chapter_text or "")).strip()
+
+    appendix = re.search(r"PHỤ\s*LỤC\s+([IVXLC\d]+)", text, re.IGNORECASE)
+    if appendix:
+        return f"PL {appendix.group(1)}"[:10]
+
+    chapter = re.search(r"Chương\s+([IVXLC\d]+)", text, re.IGNORECASE)
+    if chapter:
+        return chapter.group(1)[:10]
+
+    fallback = re.sub(r"^chuong_", "", fallback_name or "").strip()
+    return (fallback or text or "N/A")[:10]
+
+
+def normalize_chapter_title(chapter_text: str, title_text: str = "") -> str:
+    title = re.sub(r"\s+", " ", (title_text or "").strip())
+    if title:
+        return title
+
+    text = re.sub(r"\s+", " ", (chapter_text or "").strip())
+    text = re.sub(r"^Chương\s+[IVXLC\d]+[.:]?\s*", "", text, flags=re.IGNORECASE)
+    return text or "Chưa có tiêu đề"
 
 
 def crawl_law_page(url: str):
@@ -275,10 +299,12 @@ def crawl_law_page(url: str):
                 f"{stats['sections']} mục, {stats['articles']} điều"
             )
 
-            # CLEANUP (AN TOÀN)
-            log_step("Đang dọn các phiên bản cũ")
+            # Keep older crawled laws so the knowledge base does not lose content.
+            log_step("Bỏ qua dọn phiên bản cũ để giữ dữ liệu các bộ luật đã crawl")
             try:
-                counts = cleanup_versions(cur)
+                counts = {
+                    "skipped": "Giữ lại dữ liệu các bộ luật đã crawl trước đó"
+                }
                 conn.commit()
                 log_step(f"Dọn xong: {counts}")
             except Exception as e:

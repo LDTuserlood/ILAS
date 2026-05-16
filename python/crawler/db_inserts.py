@@ -1,4 +1,12 @@
+def fit_db_text(value, max_len):
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text[:max_len]
+
+
 def insert_chapter(cur, law_id, number, title, version_number):
+    number = fit_db_text(number, 10)
     try:
         cur.execute("""
             INSERT INTO chapters (law_id, chapter_number, chapter_title,
@@ -18,6 +26,7 @@ def insert_chapter(cur, law_id, number, title, version_number):
 
 
 def insert_section(cur, chapter_id, number, title, version_number):
+    number = fit_db_text(number, 10)
     try:
         cur.execute("""
             INSERT INTO sections (chapter_id, section_number, section_title,
