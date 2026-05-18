@@ -48,12 +48,20 @@ public interface ChatbotLogRepository extends JpaRepository<ChatbotLog, Integer>
     @Query("SELECT c FROM ChatbotLog c WHERE c.feedbackStatus = 'REPORTED' ORDER BY c.feedbackAt DESC, c.createdAt DESC")
     List<ChatbotLog> findReportedLogs();
 
-        @Query("""
+    @Query("""
         SELECT c FROM ChatbotLog c
         WHERE c.user.userId = :userId
         ORDER BY c.createdAt DESC
     """)
     List<ChatbotLog> findLatestByUser(Integer userId, Pageable pageable);
+
+    @Query("""
+        SELECT c FROM ChatbotLog c
+        WHERE c.user.userId = :userId
+          AND c.conversationId = :conversationId
+        ORDER BY c.createdAt DESC
+    """)
+    List<ChatbotLog> findLatestByUserAndConversation(Integer userId, String conversationId, Pageable pageable);
 
 }
 

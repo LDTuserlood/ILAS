@@ -9,15 +9,14 @@ load_dotenv(dotenv_path=env_path)
 
 from ai.retrieval_level6 import retrieve_multi_source
 from ai.context_builder import build_context
-from ai.groq_service import rewrite_legal_query
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini").lower().strip()
 
 if AI_PROVIDER == "groq":
-    from ai.groq_service import guarded_completion
+    from ai.groq_service import guarded_completion, rewrite_contextual_query
     _ACTIVE_PROVIDER = "Groq"
 else:
-    from ai.gemini_service import guarded_completion
+    from ai.gemini_service import guarded_completion, rewrite_contextual_query
     _ACTIVE_PROVIDER = "Gemini"
 
 
@@ -25,6 +24,79 @@ NO_ILAS_CONTEXT_ANSWER = (
     "Rất tiếc, theo dữ liệu hiện tại của hệ thống ILAS, tôi chưa tìm thấy "
     "quy định cụ thể phù hợp với câu hỏi này để hỗ trợ bạn."
 )
+
+
+FOLLOW_UP_MARKERS = [
+    "vay", "vậy", "the", "thế", "do", "đó", "nay", "này", "truong hop",
+    "trường hợp", "neu", "nếu", "con", "còn", "tiep", "tiếp", "nhu vay",
+    "như vậy", "dieu do", "điều đó", "khoan do", "khoản đó",
+]
+
+
+def _format_history(history, limit=4):
+    if not isinstance(history, list):
+        return ""
+
+    lines = []
+    for item in history[-limit:]:
+        if not isinstance(item, dict):
+            continue
+        question = str(item.get("question") or "").strip()
+        answer = str(item.get("answer") or "").strip()
+        context_used = str(item.get("contextUsed") or "").strip()
+
+        if context_used:
+            lines.append(f"Ngu canh luat da dung: {context_used}")
+        if question:
+            lines.append(f"User: {question}")
+        if answer:
+            lines.append(f"AI: {answer[:1200]}")
+
+    return "\n".join(lines).strip()
+
+
+def _looks_like_follow_up(query):
+    q = (query or "").lower().strip()
+    if not q:
+        return False
+    if len(q.split()) <= 8:
+        return True
+    return any(marker in q for marker in FOLLOW_UP_MARKERS)
+
+
+def _build_retrieval_query(query, history):
+    history_text = _format_history(history, limit=3)
+    if not history_text:
+        return query
+
+    try:
+        rewritten = rewrite_contextual_query(
+            current_question=query,
+            conversation_context=history_text,
+        )
+        if isinstance(rewritten, str):
+            rewritten = rewritten.strip()
+            bad_markers = [
+                "api_key",
+                "json error",
+                "khong tra ve",
+                "không trả về",
+                "dang gap",
+                "đang gặp",
+                "loi",
+                "lỗi",
+            ]
+            if rewritten and not any(marker in rewritten.lower() for marker in bad_markers):
+                return rewritten
+    except Exception as rewrite_error:
+        print("CONTEXTUAL QUERY REWRITE ERROR:", repr(rewrite_error))
+
+    return (
+        "Cau hoi hien tai co the la cau hoi tiep noi trong cuoc tro chuyen.\n"
+        "Hay tim dieu luat phu hop dua tren lich su va cau hoi moi.\n\n"
+        f"LICH SU GAN NHAT:\n{history_text}\n\n"
+        f"CAU HOI MOI:\n{query}"
+    )
 
 
 def clean_contextual_answer(answer: str) -> str:
@@ -51,9 +123,11 @@ def clean_contextual_answer(answer: str) -> str:
     return cleaned
 
 
-def answer_legal_question(query: str, settings: dict = None):
+def answer_legal_question(query: str, settings: dict = None, history=None):
     if settings is None:
         settings = {}
+    if history is None:
+        history = []
 
     if settings.get("enabled") is False:
         return {
@@ -78,7 +152,10 @@ def answer_legal_question(query: str, settings: dict = None):
     source_filter = settings.get("dataSource", "all")
 
     try:
-        results = retrieve_multi_source(query, source_filter=source_filter)
+        retrieval_query = _build_retrieval_query(query, history)
+        conversation_context = _format_history(history)
+
+        results = retrieve_multi_source(retrieval_query, source_filter=source_filter)
 
         print("\n===== DEBUG RETRIEVAL =====")
         print("TOP SOURCE:", results[0].get("source") if results else None)
@@ -122,6 +199,7 @@ def answer_legal_question(query: str, settings: dict = None):
             answer = guarded_completion(
                 context=context,
                 question=query,
+                conversation_context=conversation_context,
                 temperature=float(temperature),
                 max_tokens=int(max_tokens),
             )
@@ -142,6 +220,7 @@ def answer_legal_question(query: str, settings: dict = None):
                         groq_answer = groq_guarded_completion(
                             context=context,
                             question=query,
+                            conversation_context=conversation_context,
                             temperature=float(temperature),
                             max_tokens=int(max_tokens),
                         )
@@ -184,6 +263,8 @@ def answer_legal_question(query: str, settings: dict = None):
             "answer": answer,
             "context_used": source_title,
             "source": f"article_{article_number}" if article_number else None,
+            "sources": [f"article_{article_number}"] if article_number else [],
+            "chunks": [source_title] if source_title else [],
             "fallback": False,
         }
 

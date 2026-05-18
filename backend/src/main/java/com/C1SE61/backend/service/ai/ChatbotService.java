@@ -84,6 +84,7 @@ public class ChatbotService {
 
         Map<String, Object> body = new HashMap<>();
         body.put("question", question);
+        body.put("conversationId", conversationId);
 
         // Build settings map safely to avoid NullPointerException when some fields are null
         Map<String, Object> settingsMap = new HashMap<>();
@@ -92,6 +93,24 @@ public class ChatbotService {
         if (settings.getTemperature() != null) settingsMap.put("temperature", settings.getTemperature());
         if (settings.getMaxTokens() != null) settingsMap.put("maxTokens", settings.getMaxTokens());
         body.put("settings", settingsMap);
+
+        if (userId != null && conversationId != null && !conversationId.isBlank()) {
+            Pageable historyPage = PageRequest.of(0, 6);
+            List<ChatbotLog> recentLogs =
+                    chatbotRepo.findLatestByUserAndConversation(userId, conversationId, historyPage);
+            Collections.reverse(recentLogs);
+
+            List<Map<String, Object>> history = new ArrayList<>();
+            for (ChatbotLog log : recentLogs) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("question", log.getQuestion());
+                item.put("answer", log.getAnswer());
+                item.put("source", log.getSourceType());
+                item.put("contextUsed", log.getSourceTitle());
+                history.add(item);
+            }
+            body.put("history", history);
+        }
 
         HttpEntity<Map<String, Object>> entity =
                 new HttpEntity<>(body, headers);
@@ -126,6 +145,11 @@ public class ChatbotService {
                     }
                 }
 
+                if (sources.isEmpty() && data.get("source") instanceof String source) {
+                    sources = List.of(source);
+                    sourceType = source;
+                }
+
                 if (data.get("chunks") instanceof List<?> c) {
                     @SuppressWarnings("unchecked")
                     List<String> castedChunks = (List<String>) c;
@@ -133,6 +157,11 @@ public class ChatbotService {
                     if (!chunks.isEmpty()) {
                         firstChunk = chunks.get(0);
                     }
+                }
+
+                if (firstChunk.isBlank() && data.get("context_used") instanceof String contextUsed) {
+                    firstChunk = contextUsed;
+                    chunks = List.of(contextUsed);
                 }
             } else {
                 answer = "⚠️ AI không trả về dữ liệu.";

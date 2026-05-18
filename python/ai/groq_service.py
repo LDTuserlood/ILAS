@@ -55,6 +55,7 @@ def _post_to_groq(messages, temperature: float, max_tokens: int) -> str:
 def guarded_completion(
     context: str,
     question: str,
+    conversation_context: str = "",
     temperature: float = 0.15,
     max_tokens: int = 900
 ) -> str:
@@ -94,6 +95,9 @@ NGỮ CẢNH PHÁP LUẬT (trích từ cơ sở dữ liệu ILAS):
 
 CÂU HỎI CỦA NGƯỜI DÙNG:
 {question}
+
+Lich su hoi thoai gan day:
+{conversation_context or "Khong co"}
 """
 
     messages = [
@@ -151,3 +155,38 @@ QUY TẮC BẮT BUỘC:
         return user_question
         
     return optimized.strip()
+
+
+def rewrite_contextual_query(current_question: str, conversation_context: str) -> str:
+    """
+    Rewrite a follow-up chat message into a standalone legal search query.
+    This is used before RAG retrieval, so it must not answer the user.
+    """
+    system_prompt = """
+You rewrite Vietnamese legal chatbot follow-up questions for retrieval.
+
+Rules:
+1. Convert the current question into one standalone search query.
+2. Use recent conversation only to resolve vague references like "do", "nay", "the", "vay", "khong cam", "co lay khong".
+3. Add likely legal keywords from the conversation topic.
+4. If the current question is clearly a new topic, keep it focused on the new topic and do not force old context into it.
+5. Do not answer the question.
+6. Do not cite a law unless it appears in the conversation.
+7. Return only the rewritten Vietnamese search query, one line.
+"""
+
+    user_prompt = f"""
+RECENT CONVERSATION:
+{conversation_context or "Khong co"}
+
+CURRENT QUESTION:
+{current_question}
+"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+
+    rewritten = _post_to_groq(messages, temperature=0.05, max_tokens=160)
+    return rewritten.strip() if isinstance(rewritten, str) and rewritten.strip() else current_question

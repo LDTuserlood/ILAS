@@ -16,6 +16,7 @@ def ask():
 
     question = data.get("question", "").strip()
     settings = data.get("settings", {})
+    history = data.get("history", [])
 
     if not question:
         return jsonify({"error": "Missing 'question' field"}), 400
@@ -25,7 +26,7 @@ def ask():
     print("SETTINGS:", settings)
 
     try:
-        result = answer_legal_question(question, settings)
+        result = answer_legal_question(question, settings, history=history)
         return jsonify(result), 200
     except Exception as e:
         print("AI SERVER ERROR:", e)

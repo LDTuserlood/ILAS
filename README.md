@@ -182,6 +182,8 @@ cd frontend && npm start
 
 # Terminal 3
 cd python && python -m venv venv && pip install -r requirements.txt
+python -m ai.app      
+venv\Scripts\activate  
 ```
 
 👉 Truy cập:

@@ -18,6 +18,13 @@ export default function ChatWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [conversationId] = useState(() => {
+    const existing = localStorage.getItem("chat_widget_conversation_id");
+    if (existing) return existing;
+    const created = `conv-widget-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem("chat_widget_conversation_id", created);
+    return created;
+  });
 
   // =========================
   // PERSIST OPEN STATE
@@ -73,7 +80,7 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const res = await sendChatMessage(userId, text, true);
+      const res = await sendChatMessage(userId, text, true, conversationId);
       setMessages((p) => [...p, { sender: "bot", text: res.answer, chatId: res.chatId, feedback: null }]);
     } catch {
       setMessages((p) => [

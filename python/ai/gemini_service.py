@@ -102,6 +102,7 @@ def _post_to_gemini(messages, temperature: float, max_tokens: int) -> str:
 def guarded_completion(
     context: str,
     question: str,
+    conversation_context: str = "",
     temperature: float = 0.15,
     max_tokens: int = 900
 ) -> str:
@@ -166,6 +167,9 @@ NGỮ CẢNH PHÁP LUẬT (trích từ cơ sở dữ liệu ILAS):
 CÂU HỎI:
 {question}
 
+LICH SU HOI THOAI GAN DAY:
+{conversation_context or "Khong co"}
+
 YÊU CẦU TRẢ LỜI:
 - Dựa 100% trên nội dung trong ngữ cảnh.
 - Không được suy diễn.
@@ -197,3 +201,35 @@ Không trích dẫn điều khoản cụ thể.
     ]
 
     return _post_to_gemini(messages, temperature=0.5, max_tokens=500)
+
+
+def rewrite_contextual_query(current_question: str, conversation_context: str) -> str:
+    """
+    Rewrite a follow-up chat message into a standalone legal search query.
+    This is used before RAG retrieval, so it must not answer the user.
+    """
+    prompt = f"""
+You rewrite Vietnamese legal chatbot follow-up questions for retrieval.
+
+Goal:
+- Convert the CURRENT QUESTION into one standalone search query.
+- Use the RECENT CONVERSATION only to resolve vague references like "do", "nay", "the", "vay", "khong cam", "co lay khong".
+- Add likely legal keywords from the conversation topic.
+- If the current question is clearly a new topic, keep it focused on the new topic and do not force old context into it.
+- Do not answer the question.
+- Do not cite a law unless it appears in the conversation.
+- Return only the rewritten Vietnamese search query, one line.
+
+RECENT CONVERSATION:
+{conversation_context or "Khong co"}
+
+CURRENT QUESTION:
+{current_question}
+"""
+
+    messages = [
+        {"role": "user", "content": prompt},
+    ]
+
+    rewritten = _post_to_gemini(messages, temperature=0.05, max_tokens=160)
+    return rewritten.strip() if isinstance(rewritten, str) and rewritten.strip() else current_question
