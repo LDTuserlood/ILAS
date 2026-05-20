@@ -13,16 +13,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class LawService {
+    private static final String PYTHON_NATURAL_SEARCH_API = "http://127.0.0.1:5000/api/search/natural";
     
     @Autowired
     private LawRepository lawRepository;
@@ -158,6 +167,11 @@ public class LawService {
      * Tìm kiếm tổng hợp (luật và articles)
      */
     public SearchResultDTO searchAll(String keyword, int page, int size) {
+        SearchResultDTO naturalResult = searchNaturalLanguage(keyword, page, size);
+        if (naturalResult != null) {
+            return naturalResult;
+        }
+
         SearchResultDTO result = new SearchResultDTO();
         
         // Tìm kiếm luật
@@ -177,6 +191,197 @@ public class LawService {
         result.setTotalPages(Math.max(laws.getTotalPages(), articles.getTotalPages()));
         
         return result;
+    }
+
+    public SearchResultDTO searchNaturalLanguage(String keyword, int page, int size) {
+        String searchTerm = keyword != null ? keyword.trim() : "";
+        if (searchTerm.isEmpty() || page > 0) {
+            return null;
+        }
+
+        try {
+            RestTemplate rest = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("query", searchTerm);
+            body.put("limit", Math.max(size * 2, 12));
+
+            ResponseEntity<Map> response = rest.postForEntity(
+                    PYTHON_NATURAL_SEARCH_API,
+                    new HttpEntity<>(body, headers),
+                    Map.class
+            );
+
+            Map<?, ?> payload = response.getBody();
+            if (payload == null || !(payload.get("results") instanceof List<?> rawResults)) {
+                return null;
+            }
+
+            String rewrittenQuery = payload.get("rewrittenQuery") != null ? payload.get("rewrittenQuery").toString() : null;
+
+            List<Integer> articleIds = new ArrayList<>();
+            Map<Integer, Double> articleScores = new HashMap<>();
+            for (Object raw : rawResults) {
+                if (!(raw instanceof Map<?, ?> item)) continue;
+                Object rawId = item.get("articleId");
+                Integer articleId = toInteger(rawId);
+                if (articleId != null && !articleIds.contains(articleId)) {
+                    articleIds.add(articleId);
+                }
+                if (articleId != null) {
+                    articleScores.put(articleId, toDouble(item.get("score")));
+                }
+            }
+
+            if (articleIds.isEmpty()) {
+                SearchResultDTO empty = new SearchResultDTO();
+                empty.setLaws(List.of());
+                empty.setArticles(List.of());
+                empty.setTotalLaws(0L);
+                empty.setTotalArticles(0L);
+                empty.setTotalResults(0L);
+                empty.setCurrentPage(0);
+                empty.setTotalPages(0);
+                empty.setRewrittenQuery(rewrittenQuery);
+                empty.setSearchMode("natural");
+                return empty;
+            }
+
+            List<Article> fetched = articleRepository.findActiveByArticleIds(articleIds);
+            Map<Integer, Article> byId = fetched.stream()
+                    .collect(Collectors.toMap(Article::getArticleId, article -> article));
+
+            Map<Integer, LawCandidate> lawScores = new LinkedHashMap<>();
+            int order = 0;
+
+            for (Integer articleId : articleIds) {
+                Article article = byId.get(articleId);
+                if (article == null) continue;
+
+                if (article.getLaw() != null) {
+                    Integer lawId = article.getLaw().getLawId();
+                    double score = articleScores.getOrDefault(articleId, 0.0);
+                    int currentOrder = order;
+                    LawCandidate candidate = lawScores.computeIfAbsent(
+                            lawId,
+                            id -> new LawCandidate(new LawDTO(article.getLaw()), currentOrder)
+                    );
+                    candidate.add(score);
+                }
+                order++;
+            }
+
+            if (lawScores.isEmpty()) {
+                SearchResultDTO empty = new SearchResultDTO();
+                empty.setLaws(List.of());
+                empty.setArticles(List.of());
+                empty.setTotalLaws(0L);
+                empty.setTotalArticles(0L);
+                empty.setTotalResults(0L);
+                empty.setCurrentPage(0);
+                empty.setTotalPages(0);
+                empty.setRewrittenQuery(rewrittenQuery);
+                empty.setSearchMode("natural");
+                return empty;
+            }
+
+            List<LawCandidate> rankedLaws = new ArrayList<>(lawScores.values());
+            rankedLaws.sort((a, b) -> {
+                int byScore = Double.compare(b.score, a.score);
+                if (byScore != 0) return byScore;
+                return Integer.compare(a.firstOrder, b.firstOrder);
+            });
+
+            double topScore = rankedLaws.get(0).score;
+            boolean multiLawQuery = isMultiLawQuery(searchTerm);
+            List<LawDTO> selectedLaws = new ArrayList<>();
+
+            for (LawCandidate candidate : rankedLaws) {
+                if (selectedLaws.isEmpty()) {
+                    selectedLaws.add(candidate.law);
+                    continue;
+                }
+
+                boolean closeEnough = topScore > 0 && candidate.score >= topScore * 0.82;
+                if (multiLawQuery && closeEnough && selectedLaws.size() < 3) {
+                    selectedLaws.add(candidate.law);
+                }
+            }
+
+            SearchResultDTO result = new SearchResultDTO();
+            result.setLaws(selectedLaws);
+            result.setArticles(List.of());
+            result.setTotalLaws((long) selectedLaws.size());
+            result.setTotalArticles(0L);
+            result.setTotalResults((long) selectedLaws.size());
+            result.setCurrentPage(0);
+            result.setTotalPages(1);
+            result.setRewrittenQuery(rewrittenQuery);
+            result.setSearchMode("natural");
+            return result;
+
+        } catch (RestClientException e) {
+            System.err.println("Natural language law search unavailable: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            System.err.println("Natural language law search failed: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private Integer toInteger(Object value) {
+        if (value instanceof Integer integer) return integer;
+        if (value instanceof Number number) return number.intValue();
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private double toDouble(Object value) {
+        if (value instanceof Number number) return number.doubleValue();
+        if (value instanceof String text) {
+            try {
+                return Double.parseDouble(text);
+            } catch (NumberFormatException ignored) {
+                return 0.0;
+            }
+        }
+        return 0.0;
+    }
+
+    private boolean isMultiLawQuery(String keyword) {
+        String text = keyword == null ? "" : keyword.toLowerCase();
+        return text.contains(" và ")
+                || text.contains(",")
+                || text.contains(";")
+                || text.contains("đồng thời")
+                || text.contains("vừa ")
+                || text.contains("nhiều")
+                || text.contains("liên quan đến");
+    }
+
+    private static class LawCandidate {
+        private final LawDTO law;
+        private final int firstOrder;
+        private double score;
+        private int matches;
+
+        private LawCandidate(LawDTO law, int firstOrder) {
+            this.law = law;
+            this.firstOrder = firstOrder;
+        }
+
+        private void add(double articleScore) {
+            matches++;
+            score += articleScore + Math.max(0, 3 - matches) * 0.08;
+        }
     }
     
     /**
@@ -299,6 +504,8 @@ public class LawService {
         private Long totalResults;
         private int currentPage;
         private int totalPages;
+        private String rewrittenQuery;
+        private String searchMode;
         
         // Getters and Setters
         public List<LawDTO> getLaws() { return laws; }
@@ -321,6 +528,12 @@ public class LawService {
         
         public int getTotalPages() { return totalPages; }
         public void setTotalPages(int totalPages) { this.totalPages = totalPages; }
+
+        public String getRewrittenQuery() { return rewrittenQuery; }
+        public void setRewrittenQuery(String rewrittenQuery) { this.rewrittenQuery = rewrittenQuery; }
+
+        public String getSearchMode() { return searchMode; }
+        public void setSearchMode(String searchMode) { this.searchMode = searchMode; }
     }
 }
 

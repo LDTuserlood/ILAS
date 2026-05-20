@@ -1,5 +1,7 @@
 import os
 import requests
+import re
+import time
 from dotenv import load_dotenv
 from pathlib import Path
 
@@ -9,9 +11,30 @@ load_dotenv(dotenv_path=env_path)
 
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 API_KEY = os.getenv("GROQ_API_KEY")
+MAX_RATE_LIMIT_RETRY_SECONDS = 20
+RATE_LIMIT_FALLBACK = (
+    "Hệ thống AI đang bị giới hạn lượt xử lý tạm thời. "
+    "Bạn vui lòng thử lại sau vài giây nhé."
+)
 
 
-def _post_to_groq(messages, temperature: float, max_tokens: int) -> str:
+def _extract_retry_seconds(payload, response):
+    retry_after = response.headers.get("Retry-After")
+    if retry_after:
+        try:
+            return float(retry_after)
+        except ValueError:
+            pass
+
+    message = ""
+    if isinstance(payload, dict):
+        message = str((payload.get("error") or {}).get("message") or "")
+
+    match = re.search(r"try again in ([0-9.]+)s", message, flags=re.IGNORECASE)
+    return float(match.group(1)) if match else None
+
+
+def _post_to_groq(messages, temperature: float, max_tokens: int, _retry_count: int = 0) -> str:
     if not API_KEY:
         return "⚠️ GROQ_API_KEY chưa được cấu hình trong .env."
 
@@ -31,6 +54,20 @@ def _post_to_groq(messages, temperature: float, max_tokens: int) -> str:
         except Exception as e:
             print("Groq JSON ERROR:", e, "Raw:", res.text[:500])
             return "AI không trả về dữ liệu hợp lệ (JSON error)."
+
+        if res.status_code == 429 or (j.get("error") or {}).get("code") == "rate_limit_exceeded":
+            retry_seconds = _extract_retry_seconds(j, res)
+            if (
+                _retry_count == 0
+                and retry_seconds is not None
+                and retry_seconds <= MAX_RATE_LIMIT_RETRY_SECONDS
+            ):
+                print(f"Groq RATE LIMITED: retrying after {retry_seconds:.2f}s")
+                time.sleep(retry_seconds + 0.5)
+                return _post_to_groq(messages, temperature, max_tokens, _retry_count + 1)
+
+            print("Groq RATE LIMITED:", j)
+            return RATE_LIMIT_FALLBACK
 
         if "choices" not in j:
             print("Groq NO CHOICES:", j)
@@ -163,23 +200,29 @@ def rewrite_contextual_query(current_question: str, conversation_context: str) -
     This is used before RAG retrieval, so it must not answer the user.
     """
     system_prompt = """
-You rewrite Vietnamese legal chatbot follow-up questions for retrieval.
+Bạn là bộ phận viết lại câu hỏi cho hệ thống tìm kiếm RAG pháp luật Việt Nam.
 
-Rules:
-1. Convert the current question into one standalone search query.
-2. Use recent conversation only to resolve vague references like "do", "nay", "the", "vay", "khong cam", "co lay khong".
-3. Add likely legal keywords from the conversation topic.
-4. If the current question is clearly a new topic, keep it focused on the new topic and do not force old context into it.
-5. Do not answer the question.
-6. Do not cite a law unless it appears in the conversation.
-7. Return only the rewritten Vietnamese search query, one line.
+Nhiệm vụ:
+1. Viết lại câu hỏi hiện tại thành một câu truy vấn pháp lý độc lập, đầy đủ ngữ cảnh để đem đi tìm điều luật.
+2. Dùng lịch sử hội thoại để hiểu các cụm mơ hồ như: "thế", "vậy", "cái đó", "trường hợp này", "có lây không", "không cấm là gì".
+3. Bổ sung các từ khóa pháp lý có khả năng giúp tìm đúng điều luật, ví dụ: đường lây truyền, bệnh truyền nhiễm, HIV, trách nhiệm phòng chống lây nhiễm, tiền lương, tạm ứng tiền lương, ngành nghề cấm đầu tư kinh doanh.
+4. Nếu câu hỏi hiện tại rõ ràng là chủ đề mới, hãy viết lại theo chủ đề mới, không ép lịch sử cũ vào.
+5. Không trả lời câu hỏi.
+6. Không giải thích.
+7. Không xuống dòng nhiều dòng.
+8. Chỉ trả về duy nhất một câu truy vấn tiếng Việt.
+
+Ví dụ:
+Lịch sử: Người dùng hỏi "có các biện pháp nào phòng chống bệnh lây nhiễm ko"; AI trả lời về biện pháp phòng chống bệnh lây nhiễm.
+Câu hỏi hiện tại: "thế tôi bị nhiễm HIV có lây cho ai ko"
+Kết quả: Trong bối cảnh biện pháp phòng chống bệnh lây nhiễm, HIV có lây truyền cho người khác không, bệnh lây nhiễm qua đường nào, trách nhiệm phòng tránh lây nhiễm là gì?
 """
 
     user_prompt = f"""
-RECENT CONVERSATION:
+LỊCH SỬ HỘI THOẠI:
 {conversation_context or "Khong co"}
 
-CURRENT QUESTION:
+CÂU HỎI HIỆN TẠI:
 {current_question}
 """
 

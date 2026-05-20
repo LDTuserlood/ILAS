@@ -27,6 +27,7 @@ const UserSearch = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState("");
   const [resultMode, setResultMode] = useState("initialLaws");
+  const [searchHint, setSearchHint] = useState("");
 
   const getLawId = (law) => law?.id ?? law?.lawId;
   const getArticleId = (article) => article?.articleId ?? article?.id;
@@ -44,6 +45,7 @@ const UserSearch = () => {
 
     setLoading(true);
     setError("");
+    setSearchHint("");
 
     try {
       if (page === 0) {
@@ -88,6 +90,9 @@ const UserSearch = () => {
             totalResults: response.data.totalResults || 0,
           });
           setTotalPages(response.data.totalPages || 0);
+          if (response.data.searchMode === "natural" && response.data.rewrittenQuery) {
+            setSearchHint(`Đã hiểu câu hỏi theo hướng: ${response.data.rewrittenQuery}`);
+          }
         }
       }
 
@@ -111,6 +116,7 @@ const UserSearch = () => {
   const loadInitialLaws = async (page = 0) => {
     setLoading(true);
     setError("");
+    setSearchHint("");
     try {
       const response = await lawAPI.getAllLaws(page, 6);
       if (response?.success) {
@@ -239,6 +245,7 @@ const UserSearch = () => {
           </div>
 
           {error && <div className="usearch-error">{error}</div>}
+          {searchHint && <div className="usearch-hint">{searchHint}</div>}
 
           <div className="usearch-tabs">
             <button className={activeFilter === "all" ? "active" : ""} onClick={() => setActiveFilter("all")}>Tất cả</button>

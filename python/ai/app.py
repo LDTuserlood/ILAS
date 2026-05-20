@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from ai.legal_rag_pipeline import answer_legal_question
+from ai.legal_rag_pipeline import answer_legal_question, natural_law_search
 from ai.retrieval_level6 import reload_sources
 import os
 import subprocess
@@ -32,6 +32,33 @@ def ask():
         print("AI SERVER ERROR:", e)
         return jsonify({
             "answer": "AI Server gap loi noi bo.",
+            "error": str(e),
+        }), 500
+
+
+@app.route("/api/search/natural", methods=["POST"])
+def natural_search():
+    data = request.get_json(force=True)
+    query = data.get("query", "").strip()
+    limit = data.get("limit", 10)
+
+    if not query:
+        return jsonify({"error": "Missing 'query' field"}), 400
+
+    try:
+        limit = int(limit)
+    except Exception:
+        limit = 10
+
+    try:
+        result = natural_law_search(query, limit=max(1, min(limit, 30)))
+        return jsonify(result), 200
+    except Exception as e:
+        print("NATURAL SEARCH ERROR:", e)
+        return jsonify({
+            "query": query,
+            "rewrittenQuery": query,
+            "results": [],
             "error": str(e),
         }), 500
 

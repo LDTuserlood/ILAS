@@ -39,27 +39,70 @@ def load_full_article_by_number(article_number: str) -> str:
     return f"[{row['law_name']}]\n{row['article_title']}\n\n{row['content']}"
 
 
-def build_context(results):
-    if not results:
-        return None
-
-    top = results[0]
-
-    if top.get("source") not in ["articles", "articles/chunks"]:
-        return None
-
-    article_id = top.get("article_id")
-
-    if not article_id and top.get("id"):
-        match = re.search(r"art_(\d+)", top.get("id"))
-        if match:
-            article_id = match.group(1)
-
+def _result_article_id(result):
+    article_id = result.get("article_id")
     if article_id:
-        return load_full_article(article_id)
+        return str(article_id)
 
-    article_number = top.get("article_number")
-    if article_number:
-        return load_full_article_by_number(article_number)
+    result_id = str(result.get("id") or "")
+    match = re.search(r"art_(\d+)", result_id)
+    return match.group(1) if match else None
 
-    return None
+
+def _collect_context_articles(results, max_articles=3):
+    if not results:
+        return []
+
+    contexts = []
+    seen = set()
+
+    for item in results:
+        if item.get("source") not in ["articles", "articles/chunks"]:
+            continue
+
+        article_id = _result_article_id(item)
+        article_number = item.get("article_number")
+        key = f"id:{article_id}" if article_id else f"no:{article_number}"
+        if not key or key in seen:
+            continue
+
+        context = load_full_article(article_id) if article_id else None
+        if not context and article_number:
+            context = load_full_article_by_number(article_number)
+
+        if not context:
+            continue
+
+        seen.add(key)
+        contexts.append({
+            "article_id": article_id,
+            "article_number": article_number,
+            "law_title": item.get("law_title"),
+            "source": item.get("source"),
+            "context": context,
+        })
+
+        if len(contexts) >= max_articles:
+            break
+
+    return contexts
+
+
+def build_context(results, max_articles=3):
+    contexts = _collect_context_articles(results, max_articles=max_articles)
+    if not contexts:
+        return None
+
+    return "\n\n---\n\n".join(item["context"] for item in contexts)
+
+
+def build_context_sources(results, max_articles=3):
+    contexts = _collect_context_articles(results, max_articles=max_articles)
+    sources = []
+
+    for item in contexts:
+        label = item.get("law_title") or item.get("article_number")
+        if label and label not in sources:
+            sources.append(str(label))
+
+    return sources

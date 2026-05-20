@@ -52,8 +52,67 @@ INTENT_TO_ARTICLES = {
 }
 
 
+def article_result_by_number_in_law(article_number, law_keyword="Viên chức"):
+    rows = execute_query(
+        """
+        SELECT
+            a.article_id,
+            a.article_number,
+            a.article_title,
+            a.content,
+            l.title AS law_title
+        FROM articles a
+        JOIN laws l ON a.law_id = l.law_id
+        WHERE a.article_number = %s
+          AND a.status = 'active'
+          AND l.status = 'active'
+          AND LOWER(l.title) LIKE LOWER(%s)
+        ORDER BY l.law_id DESC
+        LIMIT 1
+        """,
+        (str(article_number), f"%{law_keyword}%"),
+        fetchone=True,
+    )
+    if not rows:
+        return None
+
+    return {
+        "id": f"art_{rows['article_id']}",
+        "text": (rows.get("content") or "")[:1200],
+        "source": "articles",
+        "article_id": rows["article_id"],
+        "article_number": rows.get("article_number"),
+        "law_title": rows.get("article_title"),
+        "semantic_score": 0.0,
+        "lexical_score": 999.0,
+        "final_score": 999.0,
+    }
+
+
 def detect_intent(query: str):
     q = normalize_text(query)
+
+    is_public_employee = (
+        any(k in q for k in ["vien chuc", "quan chuc", "cong chuc"])
+        or ("nghia vu" in q and "nha nuoc" in q)
+        or ("thich lam gi" in q and "nha nuoc" in q)
+    )
+
+    if is_public_employee:
+        if any(k in q for k in ["mien giam", "mien", "giam", "loai tru trach nhiem"]):
+            return "vien_chuc_mien_giam"
+        if any(k in q for k in ["danh gia", "xep loai", "chat luong"]):
+            return "vien_chuc_danh_gia"
+        if any(k in q for k in ["dao tao", "boi duong"]):
+            return "vien_chuc_dao_tao"
+        if any(k in q for k in ["khong duoc lam", "cam", "khong lam theo", "khong thuc hien", "ky luat", "thich lam gi"]):
+            return "vien_chuc_cam_ky_luat"
+        if "nghia vu" in q:
+            return "vien_chuc_nghia_vu"
+        if "quyen" in q and any(k in q for k in ["nghe nghiep", "hoat dong nghe nghiep"]):
+            return "vien_chuc_quyen_nghe_nghiep"
+        if "quyen" in q:
+            return "vien_chuc_quyen"
 
     if any(k in q for k in ["nghi viec", "thoi viec", "xin nghi", "nghi lam", "bo viec"]):
         return "nghi_viec"
@@ -75,6 +134,17 @@ def detect_intent(query: str):
         return "thu_viec"
 
     return None
+
+
+VIEN_CHUC_INTENT_TO_ARTICLE = {
+    "vien_chuc_nghia_vu": 7,
+    "vien_chuc_cam_ky_luat": 10,
+    "vien_chuc_mien_giam": 34,
+    "vien_chuc_danh_gia": 25,
+    "vien_chuc_dao_tao": 28,
+    "vien_chuc_quyen_nghe_nghiep": 11,
+    "vien_chuc_quyen": 11,
+}
 
 
 def load_source(name: str):
@@ -204,6 +274,16 @@ def lexical_score(query: str, result: dict) -> float:
         "cam dau tu kinh doanh",
         "nganh nghe cam",
         "dau tu kinh doanh",
+        "co y gay thuong tich",
+        "xam pham suc khoe",
+        "xam hai suc khoe",
+        "xu ly vi pham hanh chinh",
+        "boi thuong thiet hai do suc khoe",
+        "tien luong",
+        "tra luong",
+        "thanh toan tien luong",
+        "cham dut hop dong lao dong",
+        "nghia vu khi cham dut hop dong lao dong",
     ]
     for phrase in important_phrases:
         if phrase in q_norm and phrase in haystack:
@@ -278,6 +358,16 @@ def keyword_retrieve(query: str, top_k=8):
             "hanh vi bi nghiem cam",
             "dau tu kinh doanh",
             "nganh nghe cam dau tu kinh doanh",
+            "co y gay thuong tich",
+            "xam pham suc khoe",
+            "xam hai suc khoe",
+            "xu ly vi pham hanh chinh",
+            "boi thuong thiet hai do suc khoe",
+            "tien luong",
+            "tra luong",
+            "thanh toan tien luong",
+            "cham dut hop dong lao dong",
+            "nghia vu khi cham dut hop dong lao dong",
         ]
         for phrase in phrases:
             if phrase in q_norm and phrase in haystack:
@@ -342,6 +432,13 @@ def retrieve_multi_source(query: str, source_filter="all"):
 
     intent = detect_intent(query)
     if intent:
+        if intent in VIEN_CHUC_INTENT_TO_ARTICLE:
+            article_number = VIEN_CHUC_INTENT_TO_ARTICLE[intent]
+            print(f"INTENT MATCH: {intent} -> Luat Vien chuc Dieu {article_number}")
+            article_result = article_result_by_number_in_law(article_number, "Viên chức")
+            if article_result:
+                return [article_result]
+
         article_number = INTENT_TO_ARTICLES[intent][0]
         print(f"INTENT MATCH: {intent} -> Dieu {article_number}")
         keyword_results = keyword_retrieve(query)

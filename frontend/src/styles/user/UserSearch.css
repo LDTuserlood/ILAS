@@ -207,6 +207,16 @@
   padding: 10px 12px;
 }
 
+.usearch-hint {
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #c8d8ef;
+  background: #f4f8ff;
+  color: #375575;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
 .usearch-tabs {
   margin-top: 16px;
   border-bottom: 1px solid #dce2ec;

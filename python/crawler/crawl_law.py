@@ -41,6 +41,19 @@ def normalize_chapter_title(chapter_text: str, title_text: str = "") -> str:
     return text or "Chưa có tiêu đề"
 
 
+def extract_article_number(anchor_name: str, article_title: str) -> str:
+    title = re.sub(r"\s+", " ", (article_title or "")).strip()
+    match = re.search(r"\bĐiều\s+(\d+[a-zA-Z]?)\b", title, flags=re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    match = re.search(r"dieu[_-]+(\d+[a-zA-Z]?)\b", anchor_name or "", flags=re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    return None
+
+
 def crawl_law_page(url: str):
     # BẮT ĐẦU
     log_step("Bắt đầu crawl luật")
@@ -259,8 +272,11 @@ def crawl_law_page(url: str):
                 # ------------------ ĐIỀU ------------------
                 elif name.startswith("dieu_"):
                     art_title = p.get_text(" ", strip=True)
-                    m = re.match(r"Điều\s+(\d+)", art_title)
-                    art_num = m.group(1) if m else None
+                    art_num = extract_article_number(name, art_title)
+
+                    if not art_num:
+                        log_step(f"Cảnh báo: bỏ qua điều không xác định số | anchor={name} | title={art_title[:120]}")
+                        continue
 
                     content_parts = []
                     j = i + 1

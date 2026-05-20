@@ -97,6 +97,12 @@ public interface ArticleRepository extends JpaRepository<Article, Integer> {
     @Query("SELECT a FROM Article a WHERE a.articleNumber = :articleNumber AND a.status = 'active' AND a.law.status = 'active'")
     Page<Article> findByArticleNumber(@Param("articleNumber") String articleNumber, Pageable pageable);
 
+    @Query("SELECT a FROM Article a " +
+           "LEFT JOIN FETCH a.law " +
+           "LEFT JOIN FETCH a.chapter " +
+           "WHERE a.articleId IN :articleIds AND a.status = 'active' AND a.law.status = 'active'")
+    List<Article> findActiveByArticleIds(@Param("articleIds") List<Integer> articleIds);
+
     // Tìm kiếm articles theo chương (chỉ khi law.status = 'active')
     @Query("SELECT a FROM Article a WHERE a.chapter.chapterId = :chapterId AND a.status = 'active' AND a.law.status = 'active'")
     Page<Article> findByChapterId(@Param("chapterId") Integer chapterId, Pageable pageable);
